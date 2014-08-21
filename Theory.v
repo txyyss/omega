@@ -93,7 +93,7 @@ Module Bool_Val <: SEM_VAL.
   Definition truth_or := orb.
   Definition truth_not := negb.
   Definition bool_inj b : bool := b.
-  
+
   Lemma bool_inj_not_eq: bool_inj true <> bool_inj false. Proof. intro; inversion H. Qed.
 
   Lemma truth_and_comm : forall v1 v2, truth_and v1 v2 = truth_and v2 v1.
@@ -579,7 +579,7 @@ Section DirectSemantics.
   Lemma udd_forall_2:forall f v q(x:QT q),inputOrder(DisSat(substitute(v,@conv q x)f))(Undtmd(ZF_Forall v q f)). smash. Defined.
   Lemma udd_exists_1:forall f v q(x:QT q),inputOrder(Sat(substitute(v,@conv q x)f))(Undtmd(ZF_Exists v q f)). smash. Defined.
   Lemma udd_exists_2:forall f v q(x:QT q),inputOrder(DisSat(substitute(v,@conv q x)f))(Undtmd(ZF_Exists v q f)). smash. Defined.
-  
+
   Definition three_pred : Input -> Prop :=
     Fix inputOrder_wf (fun _ => Prop)
         (fun (inp : Input) =>
@@ -691,6 +691,39 @@ Section DirectSemantics.
   Eval compute in satisfied (ZF_Or (ZF_BF (ZBF_Const (bool_inj true))) (ZF_BF (ZBF_Const (bool_inj false)))).
 
 End DirectSemantics.
+
+Section ZFWellFounded.
+
+  Definition lengthOrder (f1 f2 : ZF) := length_zform f1 < length_zform f2.
+
+  Lemma lengthOrder_wf': forall len f, length_zform f <= len -> Acc lengthOrder f.
+  Proof.
+    induction len; intros; destruct f;
+    simpl in * |-; try omega;
+    constructor; intros; unfold lengthOrder in * |-; simpl in * |-;
+    apply IHlen with (f := y); omega.
+  Defined.
+
+  Theorem lengthOrder_wf: well_founded lengthOrder.
+  Proof.
+    red; intro; eapply lengthOrder_wf'; eauto.
+  Defined.
+
+  Ltac smash := intros; unfold lengthOrder; simpl; omega || rewrite <- substitute_length_inv; omega.
+
+  Lemma lengthOrder_forall:forall f v q (x: QT q), lengthOrder (substitute (v, @conv q x) f) (ZF_Forall v q f). smash. Defined.
+  Lemma lengthOrder_forall_trivial: forall f v q, lengthOrder f (ZF_Forall v q f). smash. Defined.
+  Lemma lengthOrder_exists:forall f v q (x: QT q), lengthOrder (substitute (v, @conv q x) f) (ZF_Exists v q f). smash. Defined.
+  Lemma lengthOrder_exists_trivial: forall f v q, lengthOrder f (ZF_Exists v q f). smash. Defined.
+  Lemma lengthOrder_and_1: forall f1 f2, lengthOrder f1 (ZF_And f1 f2). smash. Defined.
+  Lemma lengthOrder_and_2: forall f1 f2, lengthOrder f2 (ZF_And f1 f2). smash. Defined.
+  Lemma lengthOrder_or_1: forall f1 f2, lengthOrder f1 (ZF_Or f1 f2). smash. Defined.
+  Lemma lengthOrder_or_2: forall f1 f2, lengthOrder f2 (ZF_Or f1 f2). smash. Defined.
+  Lemma lengthOrder_imp_1: forall f1 f2, lengthOrder f1 (ZF_Imp f1 f2). smash. Defined.
+  Lemma lengthOrder_imp_2: forall f1 f2, lengthOrder f2 (ZF_Imp f1 f2). smash. Defined.
+  Lemma lengthOrder_not: forall f, lengthOrder f (ZF_Not f). smash. Defined.
+
+End ZFWellFounded.
 
 Section Simplification.
 
