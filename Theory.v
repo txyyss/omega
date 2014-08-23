@@ -14,22 +14,23 @@ Module Type SEM_VAL.
   Parameter truth_and : Val -> Val -> Val.
   Parameter truth_or : Val -> Val -> Val.
   Parameter truth_not : Val -> Val.
-  Parameter bool_inj : bool -> Val.
-  Axiom bool_inj_not_eq : bool_inj true <> bool_inj false.
+  Parameter Top : Val.
+  Parameter Btm : Val.
+  Axiom bool_inj_not_eq : Top <> Btm.
   Axiom truth_and_comm : forall v1 v2, truth_and v1 v2 = truth_and v2 v1.
   Axiom truth_or_comm : forall v1 v2, truth_or v1 v2 = truth_or v2 v1.
   Axiom truth_and_assoc : forall v1 v2 v3, truth_and v1 (truth_and v2 v3) = truth_and (truth_and v1 v2) v3.
   Axiom truth_or_assoc : forall v1 v2 v3, truth_or v1 (truth_or v2 v3) = truth_or (truth_or v1 v2) v3.
-  Axiom truth_or_true_iff : forall v1 v2, truth_or v1 v2 = bool_inj true <-> v1 = bool_inj true \/ v2 = bool_inj true.
-  Axiom truth_and_true_iff : forall v1 v2, truth_and v1 v2 = bool_inj true <-> v1 = bool_inj true /\ v2 = bool_inj true.
-  Axiom tautology_1 : truth_not (bool_inj false) = (bool_inj true).
-  Axiom tautology_2 : truth_not (bool_inj true) = (bool_inj false).
+  Axiom truth_or_true_iff : forall v1 v2, truth_or v1 v2 = Top <-> v1 = Top \/ v2 = Top.
+  Axiom truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top <-> v1 = Top /\ v2 = Top.
+  Axiom tautology_1 : truth_not Btm = Top.
+  Axiom tautology_2 : truth_not Top = Btm.
   Axiom tautology_3 : forall v, truth_and v v = v.
-  Axiom tautology_4 : truth_and (bool_inj true) (bool_inj false) = bool_inj false.
-  Axiom tautology_5 : truth_and (bool_inj false) (bool_inj true) = bool_inj false.
+  Axiom tautology_4 : truth_and Top Btm = Btm.
+  Axiom tautology_5 : truth_and Btm Top = Btm.
   Axiom tautology_6 : forall v, truth_or v v = v.
-  Axiom tautology_7 : truth_or (bool_inj true) (bool_inj false) = bool_inj true.
-  Axiom tautology_8 : truth_or (bool_inj false) (bool_inj true) = bool_inj true.
+  Axiom tautology_7 : truth_or Top Btm = Top.
+  Axiom tautology_8 : truth_or Btm Top = Top.
 
 End SEM_VAL.
 
@@ -38,13 +39,10 @@ Module Three_Val <: SEM_VAL.
   Inductive Val_Impl := VTrue | VFalse | VUnknown.
   Definition Val := Val_Impl.
 
-  Definition bool_inj b :=
-    match b with
-      | true => VTrue
-      | false => VFalse
-    end.
+  Definition Top := VTrue.
+  Definition Btm := VFalse.
 
-  Lemma bool_inj_not_eq: bool_inj true <> bool_inj false.
+  Lemma bool_inj_not_eq: Top <> Btm.
   Proof. intro; inversion H. Qed.
 
   Definition truth_and (v1 v2 : Val) :=
@@ -88,20 +86,20 @@ Module Three_Val <: SEM_VAL.
   Lemma truth_or_assoc : forall v1 v2 v3, truth_or v1 (truth_or v2 v3) = truth_or (truth_or v1 v2) v3.
   Proof. intros; destruct v1, v2, v3; simpl; trivial. Qed.
 
-  Lemma truth_or_true_iff : forall v1 v2, truth_or v1 v2 = bool_inj true <-> v1 = bool_inj true \/ v2 = bool_inj true.
+  Lemma truth_or_true_iff : forall v1 v2, truth_or v1 v2 = Top <-> v1 = Top \/ v2 = Top.
   Proof. intros; destruct v1, v2; simpl; intuition; inversion H0. Qed.
 
-  Lemma truth_and_true_iff : forall v1 v2, truth_and v1 v2 = bool_inj true <-> v1 = bool_inj true /\ v2 = bool_inj true.
+  Lemma truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top <-> v1 = Top /\ v2 = Top.
   Proof. intros; destruct v1, v2; simpl; intuition; inversion H. Qed.
 
-  Lemma tautology_1 : truth_not (bool_inj false) = (bool_inj true). Proof. intuition. Qed.
-  Lemma tautology_2 : truth_not (bool_inj true) = (bool_inj false). Proof. intuition. Qed.
+  Lemma tautology_1 : truth_not Btm = Top. Proof. intuition. Qed.
+  Lemma tautology_2 : truth_not Top = Btm. Proof. intuition. Qed.
   Lemma tautology_3 : forall v, truth_and v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
-  Lemma tautology_4 : truth_and (bool_inj true) (bool_inj false) = bool_inj false. Proof. intuition. Qed.
-  Lemma tautology_5 : truth_and (bool_inj false) (bool_inj true) = bool_inj false. Proof. intuition. Qed.
+  Lemma tautology_4 : truth_and Top Btm = Btm. Proof. intuition. Qed.
+  Lemma tautology_5 : truth_and Btm Top = Btm. Proof. intuition. Qed.
   Lemma tautology_6 : forall v, truth_or v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
-  Lemma tautology_7 : truth_or (bool_inj true) (bool_inj false) = bool_inj true. Proof. intuition. Qed.
-  Lemma tautology_8 : truth_or (bool_inj false) (bool_inj true) = bool_inj true. Proof. intuition. Qed.
+  Lemma tautology_7 : truth_or Top Btm = Top. Proof. intuition. Qed.
+  Lemma tautology_8 : truth_or Btm Top = Top. Proof. intuition. Qed.
 
 End Three_Val.
 
@@ -110,9 +108,10 @@ Module Bool_Val <: SEM_VAL.
   Definition truth_and := andb.
   Definition truth_or := orb.
   Definition truth_not := negb.
-  Definition bool_inj b : bool := b.
+  Definition Top := true.
+  Definition Btm := false.
 
-  Lemma bool_inj_not_eq: bool_inj true <> bool_inj false. Proof. intro; inversion H. Qed.
+  Lemma bool_inj_not_eq: Top <> Btm. Proof. intro; inversion H. Qed.
 
   Lemma truth_and_comm : forall v1 v2, truth_and v1 v2 = truth_and v2 v1.
   Proof. intros; destruct v1, v2; simpl; trivial. Qed.
@@ -126,20 +125,20 @@ Module Bool_Val <: SEM_VAL.
   Lemma truth_or_assoc : forall v1 v2 v3, truth_or v1 (truth_or v2 v3) = truth_or (truth_or v1 v2) v3.
   Proof. intros; destruct v1, v2, v3; simpl; trivial. Qed.
 
-  Lemma truth_or_true_iff : forall v1 v2, truth_or v1 v2 = bool_inj true <-> v1 = bool_inj true \/ v2 = bool_inj true.
-  Proof. intros; unfold bool_inj; simpl; apply orb_true_iff. Qed.
+  Lemma truth_or_true_iff : forall v1 v2, truth_or v1 v2 = Top <-> v1 = Top \/ v2 = Top.
+  Proof. intros; simpl; apply orb_true_iff. Qed.
 
-  Lemma truth_and_true_iff : forall v1 v2, truth_and v1 v2 = bool_inj true <-> v1 = bool_inj true /\ v2 = bool_inj true.
-  Proof. intros; unfold bool_inj; simpl; apply andb_true_iff. Qed.
+  Lemma truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top <-> v1 = Top /\ v2 = Top.
+  Proof. intros; simpl; apply andb_true_iff. Qed.
 
-  Lemma tautology_1 : truth_not (bool_inj false) = (bool_inj true). Proof. intuition. Qed.
-  Lemma tautology_2 : truth_not (bool_inj true) = (bool_inj false). Proof. intuition. Qed.
+  Lemma tautology_1 : truth_not Btm = Top. Proof. intuition. Qed.
+  Lemma tautology_2 : truth_not Top = Btm. Proof. intuition. Qed.
   Lemma tautology_3 : forall v, truth_and v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
-  Lemma tautology_4 : truth_and (bool_inj true) (bool_inj false) = bool_inj false. Proof. intuition. Qed.
-  Lemma tautology_5 : truth_and (bool_inj false) (bool_inj true) = bool_inj false. Proof. intuition. Qed.
+  Lemma tautology_4 : truth_and Top Btm = Btm. Proof. intuition. Qed.
+  Lemma tautology_5 : truth_and Btm Top = Btm. Proof. intuition. Qed.
   Lemma tautology_6 : forall v, truth_or v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
-  Lemma tautology_7 : truth_or (bool_inj true) (bool_inj false) = bool_inj true. Proof. intuition. Qed.
-  Lemma tautology_8 : truth_or (bool_inj false) (bool_inj true) = bool_inj true. Proof. intuition. Qed.
+  Lemma tautology_7 : truth_or Top Btm = Top. Proof. intuition. Qed.
+  Lemma tautology_8 : truth_or Btm Top = Top. Proof. intuition. Qed.
 
 End Bool_Val.
 
@@ -334,46 +333,46 @@ End LEQ_RELATION.
 Module FinLeqRelation (VAL : SEM_VAL) <: LEQ_RELATION ZNumLattice VAL.
   Import ZNumLattice.
   Import VAL.
-  Definition num_leq (x y : A) := if Z_le_dec x y then bool_inj true else bool_inj false.
+  Definition num_leq (x y : A) := if Z_le_dec x y then Top else Btm.
 End FinLeqRelation.
 
 Module Type NONE_RELATION (VAL : SEM_VAL).
   Import VAL.
   Parameter noneVal : Val.
   Axiom none_tautology_1 : truth_and noneVal (truth_not noneVal) = noneVal.
-  Axiom none_tautology_2 : truth_and noneVal (bool_inj true) = noneVal.
-  Axiom none_tautology_3 : truth_and noneVal (bool_inj false) = bool_inj false.
-  Axiom none_tautology_4 : truth_or noneVal (bool_inj false) = noneVal.
-  Axiom none_tautology_5 : truth_or (bool_inj false) noneVal = noneVal.
+  Axiom none_tautology_2 : truth_and noneVal Top = noneVal.
+  Axiom none_tautology_3 : truth_and noneVal Btm = Btm.
+  Axiom none_tautology_4 : truth_or noneVal Btm = noneVal.
+  Axiom none_tautology_5 : truth_or Btm noneVal = noneVal.
 End NONE_RELATION.
 
 Module None3ValRel <: NONE_RELATION Three_Val.
   Import Three_Val.
   Definition noneVal := VUnknown.
   Lemma none_tautology_1 : truth_and noneVal (truth_not noneVal) = noneVal. Proof. intuition. Qed.
-  Lemma none_tautology_2 : truth_and noneVal (bool_inj true) = noneVal. Proof. intuition. Qed.
-  Lemma none_tautology_3 : truth_and noneVal (bool_inj false) = bool_inj false. Proof. intuition. Qed.
-  Lemma none_tautology_4 : truth_or noneVal (bool_inj false) = noneVal. Proof. intuition. Qed.
-  Lemma none_tautology_5 : truth_or (bool_inj false) noneVal = noneVal. Proof. intuition. Qed.
+  Lemma none_tautology_2 : truth_and noneVal Top = noneVal. Proof. intuition. Qed.
+  Lemma none_tautology_3 : truth_and noneVal Btm = Btm. Proof. intuition. Qed.
+  Lemma none_tautology_4 : truth_or noneVal Btm = noneVal. Proof. intuition. Qed.
+  Lemma none_tautology_5 : truth_or Btm noneVal = noneVal. Proof. intuition. Qed.
 
 End None3ValRel.
 
 Module NoneAlwaysFalse (VAL : SEM_VAL) <: NONE_RELATION VAL.
   Import VAL.
-  Definition noneVal := bool_inj false.
+  Definition noneVal := Btm.
   Lemma none_tautology_1 : truth_and noneVal (truth_not noneVal) = noneVal.
   Proof. unfold noneVal; simpl; rewrite tautology_1, tautology_5; trivial. Qed.
 
-  Lemma none_tautology_2 : truth_and noneVal (bool_inj true) = noneVal.
+  Lemma none_tautology_2 : truth_and noneVal Top = noneVal.
   Proof. unfold noneVal; simpl; rewrite tautology_5; trivial. Qed.
 
-  Lemma none_tautology_3 : truth_and noneVal (bool_inj false) = bool_inj false.
+  Lemma none_tautology_3 : truth_and noneVal Btm = Btm.
   Proof. unfold noneVal; simpl; rewrite tautology_3; trivial. Qed.
 
-  Lemma none_tautology_4 : truth_or noneVal (bool_inj false) = noneVal.
+  Lemma none_tautology_4 : truth_or noneVal Btm = noneVal.
   Proof. unfold noneVal; simpl; rewrite tautology_6; trivial. Qed.
 
-  Lemma none_tautology_5 : truth_or (bool_inj false) noneVal = noneVal.
+  Lemma none_tautology_5 : truth_or Btm noneVal = noneVal.
   Proof. unfold noneVal; simpl; rewrite tautology_6; trivial. Qed.
 
 End NoneAlwaysFalse.
@@ -387,11 +386,11 @@ Module InfLeqRelation (VAL : SEM_VAL) (S: NONE_RELATION VAL) <: LEQ_RELATION ZIn
     match ze1, ze2 with
       | None, _
       | _, None                            => noneVal
-      | _, Some ZE_Inf                     => bool_inj true
-      | Some ZE_NegInf, _                  => bool_inj true
-      | Some ZE_Inf, Some x                => if ZE_eq_dec x ZE_Inf then bool_inj true else bool_inj false
-      | Some x, Some ZE_NegInf             => if ZE_eq_dec x ZE_NegInf then bool_inj true else bool_inj false
-      | Some (ZE_Fin z1), Some (ZE_Fin z2) => if Z_le_dec z1 z2 then bool_inj true else bool_inj false
+      | _, Some ZE_Inf                     => Top
+      | Some ZE_NegInf, _                  => Top
+      | Some ZE_Inf, Some x                => if ZE_eq_dec x ZE_Inf then Top else Btm
+      | Some x, Some ZE_NegInf             => if ZE_eq_dec x ZE_NegInf then Top else Btm
+      | Some (ZE_Fin z1), Some (ZE_Fin z2) => if Z_le_dec z1 z2 then Top else Btm
     end.
 End InfLeqRelation.
 
@@ -740,7 +739,7 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (S: N
              match inp return ((forall ff : Input, inputOrder ff inp -> Prop) -> Prop) with
                | Sat g =>
                  match g with
-                   | ZF_BF bf      => fun _ => dzbf2bool bf = bool_inj true
+                   | ZF_BF bf      => fun _ => dzbf2bool bf = Top
                    | ZF_And f1 f2  => fun tpF => (tpF (Sat f1) (sat_and_1 f1 f2)) /\ (tpF (Sat f2) (sat_and_2 f1 f2))
                    | ZF_Or f1 f2   => fun tpF => (tpF (Sat f1) (sat_or_1 f1 f2)) \/ (tpF (Sat f2) (sat_or_2 f1 f2))
                    | ZF_Imp f1 f2  => fun tpF => (tpF (DisSat f1) (sat_imp_1 f1 f2)) \/ (tpF (Sat f2) (sat_imp_2 f1 f2))
@@ -750,7 +749,7 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (S: N
                  end
                | DisSat g =>
                  match g with
-                   | ZF_BF bf => fun _ => dzbf2bool bf = bool_inj false
+                   | ZF_BF bf => fun _ => dzbf2bool bf = Btm
                    | ZF_And f1 f2 => fun tpF => (tpF (DisSat f1) (dst_and_1 f1 f2)) \/ (tpF (DisSat f2) (dst_and_2 f1 f2))
                    | ZF_Or f1 f2 => fun tpF => (tpF (DisSat f1) (dst_or_1 f1 f2)) /\ (tpF (DisSat f2) (dst_or_2 f1 f2))
                    | ZF_Imp f1 f2 => fun tpF => (tpF (Sat f1) (dst_imp_1 f1 f2)) /\ (tpF (DisSat f2) (dst_imp_2 f1 f2))
@@ -762,7 +761,7 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (S: N
                  end
                | Udtmd g =>
                  match g with
-                   | ZF_BF bf => fun _ => (dzbf2bool bf <> bool_inj true) /\ (dzbf2bool bf <> bool_inj false)
+                   | ZF_BF bf => fun _ => (dzbf2bool bf <> Top) /\ (dzbf2bool bf <> Btm)
                    | ZF_And f1 f2 => fun tpF => (~ ((tpF (Sat f1) (udd_and_1 f1 f2)) /\ (tpF (Sat f2) (udd_and_2 f1 f2)))) /\
                                                 (~ ((tpF (DisSat f1) (udd_and_3 f1 f2)) \/ (tpF (DisSat f2) (udd_and_4 f1 f2))))
                    | ZF_Or f1 f2 => fun tpF => (~ ((tpF (Sat f1) (udd_or_1 f1 f2)) \/ (tpF (Sat f2) (udd_or_2 f1 f2)))) /\
@@ -784,7 +783,7 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (S: N
 
     Lemma satisfied_unfold :
       forall zf, satisfied zf = match zf with
-                                  | ZF_BF bf      => (dzbf2bool bf = bool_inj true)
+                                  | ZF_BF bf      => (dzbf2bool bf = Top)
                                   | ZF_And f1 f2  => (satisfied f1) /\ (satisfied f2)
                                   | ZF_Or f1 f2   => (satisfied f1) \/ (satisfied f2)
                                   | ZF_Imp f1 f2  => (dissatisfied f1) \/ (satisfied f2)
@@ -799,7 +798,7 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (S: N
 
     Lemma dissatisfied_unfold :
       forall zf, dissatisfied zf = match zf with
-                                     | ZF_BF bf      => (dzbf2bool bf = bool_inj false)
+                                     | ZF_BF bf      => (dzbf2bool bf = Btm)
                                      | ZF_And f1 f2  => (dissatisfied f1) \/ (dissatisfied f2)
                                      | ZF_Or f1 f2   => (dissatisfied f1) /\ (dissatisfied f2)
                                      | ZF_Imp f1 f2  => (satisfied f1) /\ (dissatisfied f2)
@@ -840,9 +839,9 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (S: N
     Lemma dissat_undtmd_disj : forall zf, ~ (dissatisfied zf /\ undetermined zf).
     Proof. repeat intro; destruct H; rewrite undetermined_unfold in H0; destruct H0; apply H1; trivial. Qed.
 
-    Eval compute in satisfied (ZF_BF (ZBF_Const (bool_inj false))).
+    Eval compute in satisfied (ZF_BF (ZBF_Const Btm)).
 
-    Eval compute in satisfied (ZF_Or (ZF_BF (ZBF_Const (bool_inj true))) (ZF_BF (ZBF_Const (bool_inj false)))).
+    Eval compute in satisfied (ZF_Or (ZF_BF (ZBF_Const Top)) (ZF_BF (ZBF_Const Btm))).
 
   End DirectSemantics.
 

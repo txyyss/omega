@@ -336,8 +336,8 @@ Module InfSolver (sv:STRVAR) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
 
     (* Shortened Forms of Boolean Constants *)
     Definition embed (v : Val) := FA.ZF_BF (FA.ZBF_Const v).
-    Definition FATrue := embed (bool_inj true).
-    Definition FAFalse := embed (bool_inj false).
+    Definition FATrue := embed Top.
+    Definition FAFalse := embed Btm.
     Definition FANone := embed noneVal.
 
     (* Projection from integers with infinity to integers *)
@@ -585,19 +585,19 @@ Module InfSolver (sv:STRVAR) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
       repeat match goal with
                | [|- context[FinRel.num_leq _ _]] => unfold FinRel.num_leq
                | [ H: FANone = _ |- _] => unfold FANone in H; unfold embed in H; inversion H; simpl
-               | [|- context[truth_not (bool_inj false)]] => rewrite tautology_1
-               | [|- context[truth_not (bool_inj true)]] => rewrite tautology_2
+               | [|- context[truth_not Btm]] => rewrite tautology_1
+               | [|- context[truth_not Top]] => rewrite tautology_2
                | [|- context[truth_and ?X ?X]] => rewrite tautology_3
-               | [|- context[truth_and (bool_inj true) (bool_inj false)]] => rewrite tautology_4
-               | [|- context[truth_and (bool_inj false) (bool_inj true)]] => rewrite tautology_5
+               | [|- context[truth_and Top Btm]] => rewrite tautology_4
+               | [|- context[truth_and Btm Top]] => rewrite tautology_5
                | [|- context[truth_or ?X ?X]] => rewrite tautology_6
-               | [|- context[truth_or (bool_inj true) (bool_inj false)]] => rewrite tautology_7
-               | [|- context[truth_or (bool_inj false) (bool_inj true)]] => rewrite tautology_8
+               | [|- context[truth_or Top Btm]] => rewrite tautology_7
+               | [|- context[truth_or Btm Top]] => rewrite tautology_8
                | [|- context[truth_and noneVal (truth_not noneVal)]] => rewrite none_tautology_1
-               | [|- context[truth_and noneVal (bool_inj true)]] => rewrite none_tautology_2
-               | [|- context[truth_and noneVal (bool_inj false)]] => rewrite none_tautology_3
-               | [|- context[truth_or noneVal (bool_inj false)]] => rewrite none_tautology_4
-               | [|- context[truth_or (bool_inj false) noneVal]] => rewrite none_tautology_5
+               | [|- context[truth_and noneVal Top]] => rewrite none_tautology_2
+               | [|- context[truth_and noneVal Btm]] => rewrite none_tautology_3
+               | [|- context[truth_or noneVal Btm]] => rewrite none_tautology_4
+               | [|- context[truth_or Btm noneVal]] => rewrite none_tautology_5
                | [H: I2F.dexp2ZE ?z = Some (IntToInfinity.N.ZE_Fin ?x) |- context[FA.dexp2ZE (int_trans_exp ?z)]]
                  => rewrite (dexp2ZE_int_trans_eq z x)
                | [|- ?X <-> ?X] => tauto
@@ -608,8 +608,8 @@ Module InfSolver (sv:STRVAR) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
                | [|- context[InfRel.num_leq _ _]] => unfold InfRel.num_leq
                | [_: (?a <= ?b)%Z, _: ~ (?a <= ?b)%Z |- _] => contradiction
                | [_: ~ (?a <= ?b)%Z, _: ~ (?b <= ?a)%Z |- _] => exfalso; intuition
-               | [|- context[truth_and (bool_inj true) noneVal]] => rewrite truth_and_comm, none_tautology_2
-               | [|- context[truth_and (bool_inj false) noneVal]] => rewrite truth_and_comm, none_tautology_3
+               | [|- context[truth_and Top noneVal]] => rewrite truth_and_comm, none_tautology_2
+               | [|- context[truth_and Btm noneVal]] => rewrite truth_and_comm, none_tautology_3
              end.
 
     (* Boolean transformation from I2F to FA keeps the validity. *)
