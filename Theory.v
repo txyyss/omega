@@ -11,6 +11,7 @@ End VARIABLE.
 (* Semantic Value Type *)
 Module Type SEM_VAL.
   Parameter Val : Set.
+  Parameter val_eq_dec : forall v1 v2 : Val, {v1 = v2} + {v1 <> v2}.
   Parameter truth_and : Val -> Val -> Val.
   Parameter truth_or : Val -> Val -> Val.
   Parameter truth_not : Val -> Val.
@@ -38,6 +39,10 @@ Module Three_Val <: SEM_VAL.
 
   Inductive Val_Impl := VTrue | VFalse | VUnknown.
   Definition Val := Val_Impl.
+
+  Definition val_eq_dec : forall v1 v2 : Val, {v1 = v2} + {v1 <> v2}.
+    intros; destruct v1, v2; intuition; right; intro; inversion H.
+  Defined.
 
   Definition Top := VTrue.
   Definition Btm := VFalse.
@@ -110,6 +115,9 @@ Module Bool_Val <: SEM_VAL.
   Definition truth_not := negb.
   Definition Top := true.
   Definition Btm := false.
+  Definition val_eq_dec : forall v1 v2 : Val, {v1 = v2} + {v1 <> v2}.
+    intros; destruct v1, v2; intuition; right; intro; inversion H.
+  Defined.
 
   Lemma bool_inj_not_eq: Top <> Btm. Proof. intro; inversion H. Qed.
 
@@ -897,6 +905,68 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (S: N
       repeat rewrite satisfied_unfold;
       simpl; rewrite truth_or_true_iff; repeat rewrite truth_and_true_iff; tauto.
     Qed.
+
+    Inductive SimpResult (f : ZF) :=
+    | EQ_Top : f = ZF_BF (ZBF_Const Top) -> SimpResult f
+    | EQ_Btm : f = ZF_BF (ZBF_Const Btm) -> SimpResult f
+    | OTHER : f <> ZF_BF (ZBF_Const Top) /\ f <> ZF_BF (ZBF_Const Btm) -> SimpResult f.
+
+    Definition judge (f : ZF) : SimpResult f.
+      destruct f eqn : ?;
+                         try (destruct z;
+                              try (destruct (val_eq_dec v Top);
+                                   [apply EQ_Top; rewrite e; trivial |
+                                    destruct (val_eq_dec v Btm); [apply EQ_Btm; rewrite e; trivial |
+                                                                  apply OTHER; split; intro; inversion H; contradiction]]);
+                              apply OTHER; intuition; inversion H);
+      apply OTHER; intuition; inversion H.
+    Defined.
+
+    (* Further Simplification: Elimination of boolean constants and min/max *)
+    Fixpoint simplifyZF (form : ZF) : ZF :=
+      match form with
+          ZF_BF bf => eliminateMinMax bf
+        | ZF_And f1 f2 => match (simplifyZF f1), (simplifyZF f2) with
+                              e1, e2 =>
+                              match (judge e1), (judge e2) with
+                                | EQ_Top _, _ => e2
+                                | _, EQ_Top _ => e1
+                                | EQ_Btm _, _
+                                | _, EQ_Btm _ => ZF_BF (ZBF_Const Btm)
+                                | _, _ => ZF_And e1 e2
+                              end
+                          end
+        | ZF_Or f1 f2 => match (simplifyZF f1), (simplifyZF f2) with
+                             e1, e2 =>
+                             match (judge e1), (judge e2) with
+                               | EQ_Top _, _
+                               | _, EQ_Top _ => ZF_BF (ZBF_Const Top)
+                               | EQ_Btm _, _ => e2
+                               | _, EQ_Btm _ => e1
+                               | _, _ => ZF_Or e1 e2
+                             end
+                         end
+        | ZF_Imp f1 f2 => match (simplifyZF f1), (simplifyZF f2) with
+                              e1, e2 =>
+                              match (judge e1), (judge e2) with
+                                | EQ_Btm _, _
+                                | _, EQ_Top _ => ZF_BF (ZBF_Const Top)
+                                | EQ_Top _, EQ_Btm _ => ZF_BF (ZBF_Const Btm)
+                                | EQ_Top _, _ => e2
+                                | OTHER _, EQ_Btm _ => ZF_Not e1
+                                | _, _ => ZF_Imp e1 e2
+                              end
+                          end
+        | ZF_Not f => match (simplifyZF f) with
+                          e => match (judge e) with
+                                 | EQ_Top _ => ZF_BF (ZBF_Const Btm)
+                                 | EQ_Btm _ => ZF_BF (ZBF_Const Top)
+                                 | OTHER _ => ZF_Not e
+                               end
+                      end
+        | ZF_Forall v q f => ZF_Forall v q (simplifyZF f)
+        | ZF_Exists v q f => ZF_Exists v q (simplifyZF f)
+      end.
 
   End Simplification.
 
