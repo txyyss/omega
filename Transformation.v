@@ -619,6 +619,422 @@ Module InfSolver (sv:STRVAR) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
     Lemma int_trans_bf_dst: forall bf, I2F.dissatisfied (I2F.ZF_BF bf) <-> FA.dissatisfied (int_trans_bf bf).
     Proof. destruct bf; simpl; rewrite I2F.dissatisfied_unfold, FA.dissatisfied_unfold; simpl; smash_int_trans_bf. Qed.
 
+    (* Transform logic forms from I2F to FA *)
+    Fixpoint int_trans (form : I2F.ZF) : FA.ZF :=
+      match form with
+          I2F.ZF_BF bf => int_trans_bf bf
+        | I2F.ZF_And f1 f2 => FA.ZF_And (int_trans f1) (int_trans f2)
+        | I2F.ZF_Or f1 f2 => FA.ZF_Or (int_trans f1) (int_trans f2)
+        | I2F.ZF_Imp f1 f2 => FA.ZF_Imp (int_trans f1) (int_trans f2)
+        | I2F.ZF_Not f => FA.ZF_Not (int_trans f)
+        | I2F.ZF_Forall v q f => FA.ZF_Forall v q (int_trans f)
+        | I2F.ZF_Exists v q f => FA.ZF_Exists v q (int_trans f)
+      end.
+
+    (* The products in I2F and FA are equal for finite natural number *)
+    Lemma nat_nummult_eq: forall z x, I2F.num_mult_nat z (Some (ZE_Fin x)) = Some (ZE_Fin (FA.num_mult_nat z x)).
+    Proof.
+      induction z; intros.
+      auto.
+      unfold I2F.num_mult_nat; fold I2F.num_mult_nat;
+      unfold FA.num_mult_nat; fold FA.num_mult_nat;
+      rewrite IHz; auto.
+    Qed.
+
+    (* The products in I2F and FA are equal for finite integer number *)
+    Lemma nummult_eq: forall z x, I2F.num_mult z (Some (ZE_Fin x)) = Some (ZE_Fin (FA.num_mult z x)).
+    Proof.
+      destruct z; intros.
+      simpl; auto.
+      unfold I2F.num_mult, FA.num_mult.
+      apply nat_nummult_eq.
+      unfold I2F.num_mult, FA.num_mult.
+      rewrite nat_nummult_eq; auto.
+    Qed.
+
+    (* Substitution keeps the finiteness of expressions. *)
+    Lemma finite_subst2finite: forall z v x c1, I2F.dexp2ZE z = Some (ZE_Fin c1) ->
+                                                (exists c2, I2F.dexp2ZE (I2F.subst_exp (v, @IntToInfinity.conv tt x) z) =
+                                                            Some (ZE_Fin c2)).
+    Proof.
+      induction z; simpl; intros.
+      destruct (var_eq_dec v0 v); [exists x | exists 0%Z]; simpl; auto.
+      exists c1; auto.
+      apply numplus_finite in H; destruct H, H, H; destruct H0;
+      apply (IHz1 v x) in H; apply (IHz2 v x) in H0; destruct H, H0; rewrite H, H0; exists (x2 + x3)%Z; auto.
+      apply numneg_finite in H; destruct H, H; apply (IHz v x) in H; destruct H; rewrite H; exists (- x1)%Z; auto.
+      apply numplus_finite in H; destruct H, H, H; destruct H0; apply numneg_finite in H0; destruct H0, H0;
+      apply (IHz1 v x) in H; apply (IHz2 v x) in H0; destruct H, H0; rewrite H, H0; rewrite <- H2 in H1; exists (x3 - x4)%Z; auto.
+      apply nummult_finite in H;
+        destruct H, H. rewrite H; simpl; exists 0%Z; auto.
+      destruct H; apply (IHz v x) in H; destruct H; rewrite H.
+      exists (FA.num_mult z x1).
+      simpl; apply nummult_eq.
+    Qed.
+
+    (* If the product of natural number multiplication is positive infinity, then the variable is positive infinity. *)
+    Lemma nat_nummult_inf: forall z v, I2F.num_mult_nat z v = Some ZE_Inf -> (z > 0 /\ v = Some ZE_Inf).
+    Proof.
+      induction z; simpl; intros.
+      discriminate H.
+      split. omega.
+      apply numplus_inf in H.
+      destruct H, H, H.
+      apply IHz in H0. destruct H0; auto.
+      auto.
+      apply IHz in H0. destruct H0; auto.
+    Qed.
+
+    (* If the product of natural number multiplication is negative infinity, then the variable is negative infinity. *)
+    Lemma nat_nummult_neginf: forall z v, I2F.num_mult_nat z v = Some ZE_NegInf -> (z > 0 /\ v = Some ZE_NegInf).
+    Proof.
+      induction z; simpl; intros.
+      discriminate H.
+      split. omega.
+      apply numplus_neginf in H.
+      destruct H, H, H.
+      apply IHz in H0. destruct H0; auto.
+      auto.
+      apply IHz in H0. destruct H0; auto.
+    Qed.
+
+    (* If the product of integer multiplication is positive infinity, then
+either variable is positive infinity and constant is positive or
+variable is negative infinity and constant is negative. *)
+    Lemma nummult_inf: forall z v, I2F.num_mult z v = Some ZE_Inf ->
+                                   (((z > 0)%Z /\ v = Some ZE_Inf) \/ ((z < 0)%Z /\ v = Some ZE_NegInf)).
+    Proof.
+      destruct z; simpl; intros.
+      discriminate H.
+      apply nat_nummult_inf in H; destruct H.
+      left. split; auto.
+      assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos; omega.
+      apply numneg_inf in H. apply nat_nummult_neginf in H; destruct H.
+      right; split; auto.
+      apply Pos2Z.neg_is_neg.
+    Qed.
+
+    (* If the product of integer multiplication is negative infinity, then
+either variable is negative infinity and constant is positive or
+variable is positive infinity and constant is negative. *)
+    Lemma nummult_neginf: forall z v, I2F.num_mult z v = Some ZE_NegInf ->
+                                      (((z > 0)%Z /\ v = Some ZE_NegInf) \/ ((z < 0)%Z /\ v = Some ZE_Inf)).
+    Proof.
+      destruct z; simpl; intros.
+      discriminate H.
+      apply nat_nummult_neginf in H; destruct H.
+      left. split; auto.
+      assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos; omega.
+      apply numneg_neginf in H. apply nat_nummult_inf in H; destruct H.
+      right; split; auto.
+      apply Pos2Z.neg_is_neg.
+    Qed.
+
+    Ltac solve_mul2inf p IHp:= induction p; auto; unfold I2F.num_mult_nat in *; fold I2F.num_mult_nat in *; rewrite IHp; auto.
+
+    (* positive c * infinity = infinity *)
+    Lemma num_mult_nat_inf: forall p, I2F.num_mult_nat (S p) (Some ZE_Inf) = Some ZE_Inf.
+    Proof. solve_mul2inf p IHp. Qed.
+
+    (* positive c * negative infinity = negative infinity *)
+    Lemma num_mult_nat_neginf: forall p, I2F.num_mult_nat (S p) (Some ZE_NegInf) = Some ZE_NegInf.
+    Proof. solve_mul2inf p IHp. Qed.
+
+    Ltac solve_tonat_infnone p l:= simpl; assert (exists pp, Pos.to_nat p = S pp) as SSS by
+                                         (exists (pred (Pos.to_nat p)); apply (S_pred (Pos.to_nat p) 0); apply Pos2Nat.is_pos);
+                                   destruct SSS as [pr S1]; rewrite S1; rewrite l; auto.
+
+    (* Substitution keeps the infiniteness of expressions *)
+    Lemma inf_subst2inf: forall z v x, I2F.dexp2ZE z = Some ZE_Inf ->
+                                       I2F.dexp2ZE (I2F.subst_exp (v, @IntToInfinity.conv tt x) z) = Some ZE_Inf
+                                       with neginf_subst2neginf: forall z v x, I2F.dexp2ZE z = Some ZE_NegInf ->
+                                                                               I2F.dexp2ZE (I2F.subst_exp (v, @IntToInfinity.conv tt x) z) = Some ZE_NegInf.
+
+    Proof.
+      induction z; simpl; intros; auto.
+      discriminate H.
+      apply numplus_inf in H.
+      destruct H, H, H.
+      apply (finite_subst2finite z1 v x x0) in H; destruct H; apply (IHz2 v x) in H0; rewrite H, H0; auto.
+      destruct H0; apply (IHz1 v x) in H; apply (finite_subst2finite z2 v x x0) in H0; destruct H0; rewrite H, H0; auto.
+      apply (IHz1 v x) in H; apply (IHz2 v x) in H0; rewrite H, H0; auto.
+      apply numneg_inf in H; apply (neginf_subst2neginf z v x) in H; rewrite H; auto.
+      apply numplus_inf in H; destruct H, H, H.
+      apply numneg_inf in H0; apply (finite_subst2finite z1 v x x0) in H; destruct H;
+      apply (neginf_subst2neginf z2 v x) in H0; rewrite H, H0; auto.
+      destruct H0. apply (IHz1 v x) in H. apply numneg_finite in H0. destruct H0, H0.
+      apply (finite_subst2finite z2 v x x1) in H0; destruct H0.
+      rewrite H, H0; auto.
+      apply (IHz1 v x) in H. apply numneg_inf in H0. apply (neginf_subst2neginf z2 v x) in H0.
+      rewrite H, H0; auto.
+      apply nummult_inf in H.
+      destruct H; destruct H.
+      apply (IHz v x) in H0; rewrite H0.
+      destruct z. discriminate H.
+      solve_tonat_infnone p num_mult_nat_inf.
+      assert (Z.neg p < 0)%Z by apply Pos2Z.neg_is_neg; omega.
+      apply (neginf_subst2neginf z0 v x) in H0.
+      rewrite H0.
+      destruct z. discriminate H.
+      assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos; omega.
+      solve_tonat_infnone p num_mult_nat_neginf.
+
+      induction z; simpl; intros; auto.
+      discriminate H.
+      apply numplus_neginf in H.
+      destruct H, H, H.
+      apply (finite_subst2finite z1 v x x0) in H; destruct H; apply (IHz2 v x) in H0; rewrite H, H0; auto.
+      destruct H0; apply (IHz1 v x) in H; apply (finite_subst2finite z2 v x x0) in H0; destruct H0; rewrite H, H0; auto.
+      apply (IHz1 v x) in H; apply (IHz2 v x) in H0; rewrite H, H0; auto.
+      apply numneg_neginf in H; apply (inf_subst2inf z v x) in H; rewrite H; auto.
+      apply numplus_neginf in H; destruct H, H, H.
+      apply numneg_neginf in H0; apply (finite_subst2finite z1 v x x0) in H; destruct H;
+      apply (inf_subst2inf z2 v x) in H0; rewrite H, H0; auto.
+      destruct H0. apply (IHz1 v x) in H. apply numneg_finite in H0. destruct H0, H0.
+      apply (finite_subst2finite z2 v x x1) in H0; destruct H0.
+      rewrite H, H0; auto.
+      apply (IHz1 v x) in H. apply numneg_neginf in H0. apply (inf_subst2inf z2 v x) in H0.
+      rewrite H, H0; auto.
+      apply nummult_neginf in H.
+      destruct H; destruct H.
+      apply (IHz v x) in H0; rewrite H0.
+      destruct z. discriminate H.
+      solve_tonat_infnone p num_mult_nat_neginf.
+      assert (Z.neg p < 0)%Z by apply Pos2Z.neg_is_neg; omega.
+      apply (inf_subst2inf z0 v x) in H0.
+      rewrite H0.
+      destruct z. discriminate H.
+      assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos; omega.
+      solve_tonat_infnone p num_mult_nat_inf.
+    Qed.
+
+    (* If the product of natural number multiplication is undefined, then the variable is undefined. *)
+    Lemma nat_nummult_none: forall z v, I2F.num_mult_nat z v = None -> (z <> 0 /\ v = None).
+    Proof.
+      induction z; simpl; intros.
+      discriminate H.
+      split. omega.
+      apply numplus_none in H.
+      destruct H. auto.
+      destruct H. apply IHz. auto.
+      destruct H, H.
+      apply nat_nummult_neginf in H0. destruct H0. rewrite H in H1. discriminate H1.
+      apply nat_nummult_inf in H0. destruct H0. rewrite H in H1. discriminate H1.
+    Qed.
+
+    (* If the product of integer multiplication is undefined, then the variable is undefined. *)
+    Lemma nummult_none: forall z v, I2F.num_mult z v = None -> ((z <> 0)%Z /\ v = None).
+    Proof.
+      destruct z; simpl; intros.
+      discriminate H.
+      split.
+      assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos; omega.
+      apply nat_nummult_none in H. destruct H. auto.
+      split.
+      assert (Z.neg p < 0)%Z by apply Pos2Z.neg_is_neg; omega.
+      apply numneg_none in H.
+      apply nat_nummult_none in H. destruct H. auto.
+    Qed.
+
+    (* positive c * undefined = undefined *)
+    Lemma num_mult_nat_none: forall p, I2F.num_mult_nat (S p) None = None.
+    Proof.
+      induction p; simpl; auto.
+    Qed.
+
+    (* Substitution keeps the undefinedness of evaluation. *)
+    Lemma none_subst2none: forall z v x, I2F.dexp2ZE z = None ->
+                                         I2F.dexp2ZE (I2F.subst_exp (v, @IntToInfinity.conv tt x) z) = None.
+    Proof.
+      induction z; simpl; intros.
+      discriminate H.
+      auto.
+      apply numplus_none in H.
+      destruct H.
+      apply (IHz1 v x) in H; rewrite H; simpl; auto.
+      destruct H.
+      apply (IHz2 v x) in H; rewrite H.
+      unfold IntToInfinity.N.num_plus; destruct (I2F.dexp2ZE (I2F.subst_exp (v, IntToInfinity.conv x) z1)); auto; destruct z; auto.
+      destruct H, H.
+      apply (inf_subst2inf z1 v x) in H;
+        apply (neginf_subst2neginf z2 v x) in H0;
+        rewrite H, H0; auto.
+      apply (neginf_subst2neginf z1 v x) in H;
+        apply (inf_subst2inf z2 v x) in H0;
+        rewrite H, H0; auto.
+      apply numneg_none in H. apply (IHz v x) in H. rewrite H. auto.
+      apply numplus_none in H.
+      destruct H. apply (IHz1 v x) in H. rewrite H; auto.
+      destruct H. apply numneg_none in H. apply (IHz2 v x) in H. rewrite H.
+      unfold IntToInfinity.N.num_neg.
+      unfold option_map.
+      unfold IntToInfinity.N.num_plus.
+      destruct (I2F.dexp2ZE (I2F.subst_exp (v, IntToInfinity.conv x) z1)); auto.
+      destruct z; auto.
+      destruct H, H.
+      apply (inf_subst2inf z1 v x) in H.
+      apply numneg_neginf in H0. apply (inf_subst2inf z2 v x) in H0.
+      rewrite H, H0. auto.
+      apply (neginf_subst2neginf z1 v x) in H.
+      apply numneg_inf in H0. apply (neginf_subst2neginf z2 v x) in H0.
+      rewrite H, H0. auto.
+      apply nummult_none in H. destruct H. apply (IHz v x) in H0. rewrite H0.
+      destruct z; simpl. omega.
+      solve_tonat_infnone p num_mult_nat_none.
+      solve_tonat_infnone p num_mult_nat_none.
+    Qed.
+
+    (* Substitution and expression transformation from I2F to IA are commutative. *)
+    Lemma subst_int_trans_exp_eq: forall z v x, FA.subst_exp (v, @PureInt.conv tt x) (int_trans_exp z) =
+                                                int_trans_exp (I2F.subst_exp (v, @IntToInfinity.conv tt x) z).
+    Proof.
+      induction z; simpl; intros.
+      destruct (var_eq_dec v0 v); auto.
+      auto.
+      rewrite IHz1, IHz2; auto.
+      rewrite IHz; auto.
+      rewrite IHz1, IHz2; auto.
+      rewrite IHz; auto.
+    Qed.
+
+    Ltac smash_subst_int_trans_bf_eq :=
+      repeat match goal with
+               | [|- ?X = ?X] => apply eq_refl
+               | [H1 : I2F.dexp2ZE ?z = None, H2 : I2F.dexp2ZE (I2F.subst_exp (?v, IntToInfinity.conv ?x) ?z) = Some _ |- _] =>
+                 apply (none_subst2none z v x) in H1; rewrite H1 in H2; discriminate H2
+               | [H1 : I2F.dexp2ZE ?zExp = Some ?zSome,
+                       H2 : I2F.dexp2ZE (I2F.subst_exp (?v, IntToInfinity.conv ?x) ?zExp) = None |- _] =>
+                 destruct zSome; [apply (finite_subst2finite zExp v x) in H1; destruct H1 as [? H1] |
+                                  apply (inf_subst2inf zExp v x) in H1 | apply (neginf_subst2neginf zExp v x) in H1];
+                 rewrite H1 in H2; discriminate H2
+               |[H1 : I2F.dexp2ZE ?z = Some (IntToInfinity.N.ZE_Fin _),
+                      H2 : I2F.dexp2ZE (I2F.subst_exp (?v, IntToInfinity.conv ?x) ?z) = Some IntToInfinity.N.ZE_Inf |- _] =>
+                apply (finite_subst2finite z v x) in H1; destruct H1 as [? H1]; rewrite H1 in H2; discriminate H2
+               |[H1 : I2F.dexp2ZE ?z = Some (IntToInfinity.N.ZE_Fin _),
+                      H2 : I2F.dexp2ZE (I2F.subst_exp (?v, IntToInfinity.conv ?x) ?z) = Some IntToInfinity.N.ZE_NegInf |- _] =>
+                apply (finite_subst2finite z v x) in H1; destruct H1 as [? H1]; rewrite H1 in H2; discriminate H2
+               |[H1 : I2F.dexp2ZE ?z = Some IntToInfinity.N.ZE_Inf,
+                      H2 : I2F.dexp2ZE (I2F.subst_exp (?v, IntToInfinity.conv ?x) ?z) = Some (IntToInfinity.N.ZE_Fin _) |- _] =>
+                apply (inf_subst2inf z v x) in H1; rewrite H1 in H2; discriminate H2
+               |[H1 : I2F.dexp2ZE ?z = Some IntToInfinity.N.ZE_Inf,
+                      H2 : I2F.dexp2ZE (I2F.subst_exp (?v, IntToInfinity.conv ?x) ?z) = Some IntToInfinity.N.ZE_NegInf |- _] =>
+                apply (inf_subst2inf z v x) in H1; rewrite H1 in H2; discriminate H2
+               |[H1 : I2F.dexp2ZE ?z = Some IntToInfinity.N.ZE_NegInf,
+                      H2 : I2F.dexp2ZE (I2F.subst_exp (?v, IntToInfinity.conv ?x) ?z) = Some (IntToInfinity.N.ZE_Fin _) |- _] =>
+                apply (neginf_subst2neginf z v x) in H1; rewrite H1 in H2; discriminate H2
+               |[H1 : I2F.dexp2ZE ?z = Some IntToInfinity.N.ZE_NegInf,
+                      H2 : I2F.dexp2ZE (I2F.subst_exp (?v, IntToInfinity.conv ?x) ?z) = Some IntToInfinity.N.ZE_Inf |- _] =>
+                apply (neginf_subst2neginf z v x) in H1; rewrite H1 in H2; discriminate H2
+               |[H1 : I2F.dexp2ZE ?z1 = Some ?z2,
+                      H2 : I2F.dexp2ZE (I2F.subst_exp (?v, IntToInfinity.conv ?x) ?z1) = Some ?z3,
+                           H3 : ?z2 = ZE_NegInf, H4 : ?z3 <> ZE_NegInf |- _] =>
+                let H := fresh "H" in
+                rewrite H3 in H1; apply (neginf_subst2neginf z1 v x) in H1; rewrite H1 in H2;
+                injection H2; intro H; rewrite H in H4; exfalso; apply H4, eq_refl
+               |[H1 : I2F.dexp2ZE ?z1 = Some ?z2,
+                      H2 : I2F.dexp2ZE (I2F.subst_exp (?v, IntToInfinity.conv ?x) ?z1) = Some ?z3,
+                           H3 : ?z2 = ZE_Inf, H4 : ?z3 <> ZE_Inf |- _] =>
+                let H := fresh "H" in
+                rewrite H3 in H1; apply (inf_subst2inf z1 v x) in H1; rewrite H1 in H2;
+                injection H2; intro H; rewrite H in H4; exfalso; apply H4, eq_refl
+               |[H1 : I2F.dexp2ZE ?z1 = Some ?z2,
+                      H2 : I2F.dexp2ZE (I2F.subst_exp (?v, IntToInfinity.conv ?x) ?z1) = Some ?z3,
+                           H3 : ?z2 <> ZE_NegInf, H4 : ?z3 = ZE_NegInf|- _] =>
+                rewrite H4 in H2; destruct z2;
+                [apply (finite_subst2finite z1 v x) in H1; destruct H1 as [? H1]; rewrite H1 in H2; discriminate H2 |
+                 apply (inf_subst2inf z1 v x) in H1; rewrite H1 in H2; discriminate H2 | exfalso; apply H3, eq_refl]
+               |[H1 : I2F.dexp2ZE ?z1 = Some ?z2,
+                      H2 : I2F.dexp2ZE (I2F.subst_exp (?v, IntToInfinity.conv ?x) ?z1) = Some ?z3,
+                           H3 : ?z2 <> ZE_Inf, H4 : ?z3 = ZE_Inf|- _] =>
+                rewrite H4 in H2; destruct z2;
+                [apply (finite_subst2finite z1 v x) in H1; destruct H1 as [? H1]; rewrite H1 in H2; discriminate H2 |
+                 exfalso; apply H3, eq_refl | apply (neginf_subst2neginf z1 v x) in H1; rewrite H1 in H2; discriminate H2 ]
+               | [H: context[ZE_eq_dec _ _] |- _] => clear H
+               | [|- context[FAFalse]] => unfold FAFalse
+               | [|- context[FATrue]] => unfold FATrue
+               | [|- context[match I2F.dexp2ZE ?X with _ => _ end]] => destruct (I2F.dexp2ZE X) eqn: ?; simpl
+               | [|- context[match ?X with _ => _ end]] => destruct X eqn: ?; simpl
+               | [|- context[FA.subst_exp (_, PureInt.conv _) (int_trans_exp _)]] => rewrite subst_int_trans_exp_eq
+               | [|- context[embed _]] => unfold embed
+               | [|- context[FANone]] => unfold FANone
+             end.
+
+    (* Substitution and boolean form transformation from I2F to IA are commutative. *)
+    Lemma subst_int_trans_bf_eq: forall z v x, FA.substitute (v, @PureInt.conv tt x) (int_trans (I2F.ZF_BF z)) =
+                                               int_trans (I2F.substitute (v, @IntToInfinity.conv tt x) (I2F.ZF_BF z)).
+    Proof. destruct z; simpl; intros; smash_subst_int_trans_bf_eq. Qed.
+
+    (* Substitution and logic form transformation from I2F to IA are commutative. *)
+    Lemma subst_int_trans_eq: forall f v x, FA.substitute (v, @PureInt.conv tt x) (int_trans f) =
+                                            int_trans (I2F.substitute (v, @IntToInfinity.conv tt x) f).
+    Proof.
+      intros f. remember (I2F.length_zform f). assert (I2F.length_zform f <= n) by omega. clear Heqn. revert f H.
+      induction n; intros.
+      exfalso; destruct f; simpl in H; omega.
+      destruct f; simpl in H; apply le_S_n in H; simpl.
+      apply subst_int_trans_bf_eq.
+      rewrite (IHn f1), (IHn f2); auto; try omega.
+      rewrite (IHn f1), (IHn f2); auto; try omega.
+      rewrite (IHn f1), (IHn f2); auto; try omega.
+      rewrite (IHn f); auto.
+      destruct (var_eq_dec v v0); simpl; auto; rewrite (IHn f); auto.
+      destruct (var_eq_dec v v0); simpl; auto; rewrite (IHn f); auto.
+    Qed.
+
+    Lemma int_trans_ok: forall f, (I2F.satisfied f <-> FA.satisfied (int_trans f)) /\
+                                  (I2F.dissatisfied f <-> FA.dissatisfied (int_trans f)).
+    Proof.
+      intros f; remember (I2F.length_zform f); assert (I2F.length_zform f <= n) by omega; clear Heqn; revert f H;
+      induction n; intros.
+      exfalso; destruct f; simpl in H; exfalso; intuition.
+      destruct f; simpl in H; apply le_S_n in H; simpl; try (rewrite int_trans_bf_sat, int_trans_bf_dst; tauto);
+      rewrite I2F.satisfied_unfold, FA.satisfied_unfold; rewrite I2F.dissatisfied_unfold, FA.dissatisfied_unfold.
+      assert (S1 : I2F.length_zform f1 <= n) by omega; assert (S2 : I2F.length_zform f2 <= n) by omega;
+      destruct (IHn _ S1) as [SAT1 DST1]; destruct (IHn _ S2) as [SAT2 DST2]; rewrite SAT1, DST1, SAT2, DST2; tauto.
+      assert (S1 : I2F.length_zform f1 <= n) by omega; assert (S2 : I2F.length_zform f2 <= n) by omega;
+      destruct (IHn _ S1) as [SAT1 DST1]; destruct (IHn _ S2) as [SAT2 DST2]; rewrite SAT1, DST1, SAT2, DST2; tauto.
+      rewrite <- I2F.dissatisfied_unfold, <- FA.dissatisfied_unfold;
+        assert (S1 : I2F.length_zform f1 <= n) by omega; assert (S2 : I2F.length_zform f2 <= n) by omega;
+        destruct (IHn _ S1) as [SAT1 DST1]; destruct (IHn _ S2) as [SAT2 DST2];
+        split; [rewrite DST1, SAT2 | rewrite I2F.dissatisfied_unfold, FA.dissatisfied_unfold; rewrite SAT1, DST2]; tauto.
+      rewrite <- I2F.dissatisfied_unfold, <- FA.dissatisfied_unfold;
+        assert (S : I2F.length_zform f <= n) by omega; destruct (IHn _ S) as [SAT DST];
+        split; [rewrite DST | rewrite I2F.dissatisfied_unfold, FA.dissatisfied_unfold; rewrite SAT]; tauto.
+
+      split; split; intros; simpl; [ | | destruct H0 as [x H0] | destruct H0 as [x H0]];
+      assert (S : I2F.length_zform (I2F.substitute (v, @IntToInfinity.conv tt x) f) <= n) by
+          (rewrite <- I2F.substitute_length_inv; trivial);
+      destruct (IHn _ S) as [SAT DST];
+      assert (FA.substitute (v, @PureInt.conv tt x) (int_trans f) =
+              int_trans (I2F.substitute (v, @IntToInfinity.conv tt x) f)) by apply (subst_int_trans_eq f v x);
+      unfold PureInt.QT in H1; unfold PureInt.N.A; unfold PureInt.conv in *;
+      [rewrite H1; rewrite <- SAT | rewrite SAT; rewrite <- H1 |
+       exists x; rewrite H1; rewrite <- DST | exists x; rewrite DST; rewrite <- H1]; apply H0.
+
+      split; split; intros; simpl; [destruct H0 as [x H0] | destruct H0 as [x H0] | | ];
+      assert (S : I2F.length_zform (I2F.substitute (v, @IntToInfinity.conv tt x) f) <= n) by
+          (rewrite <- I2F.substitute_length_inv; trivial);
+      destruct (IHn _ S) as [SAT DST];
+      assert (FA.substitute (v, @PureInt.conv tt x) (int_trans f) =
+              int_trans (I2F.substitute (v, @IntToInfinity.conv tt x) f)) by apply (subst_int_trans_eq f v x);
+      unfold PureInt.QT in H1; unfold PureInt.N.A; unfold PureInt.conv in *;
+      [exists x; rewrite H1; rewrite <- SAT | exists x; rewrite SAT; rewrite <- H1 | rewrite H1; rewrite <- DST |
+              rewrite DST; rewrite <- H1]; apply H0.
+    Qed.
+
   End IntegerTransformation.
+
+  (* Transformation from IA to FA *)
+  Definition T (f : IA.ZF) : FA.ZF := int_trans (inf_trans (f)).
+
+  (* The transformation from IA to FA keeps the validity *)
+  Theorem valid_eq: forall f, (IA.satisfied f <-> FA.satisfied (T f)) /\
+                              (IA.dissatisfied f <-> FA.dissatisfied (T f)).
+  Proof.
+    intros; unfold T; split;
+    destruct (inf_trans_ok f);
+    destruct (int_trans_ok (inf_trans f));
+    intuition.
+  Qed.
 
 End InfSolver.
