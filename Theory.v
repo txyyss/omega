@@ -24,6 +24,8 @@ Module Type SEM_VAL.
   Axiom truth_or_assoc : forall v1 v2 v3, truth_or v1 (truth_or v2 v3) = truth_or (truth_or v1 v2) v3.
   Axiom truth_or_true_iff : forall v1 v2, truth_or v1 v2 = Top <-> v1 = Top \/ v2 = Top.
   Axiom truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top <-> v1 = Top /\ v2 = Top.
+  Axiom truth_or_false_iff : forall v1 v2, truth_or v1 v2 = Btm <-> v1 = Btm /\ v2 = Btm.
+  Axiom truth_and_false_iff : forall v1 v2, truth_and v1 v2 = Btm <-> v1 = Btm \/ v2 = Btm.
   Axiom tautology_1 : truth_not Btm = Top.
   Axiom tautology_2 : truth_not Top = Btm.
   Axiom tautology_3 : forall v, truth_and v v = v.
@@ -97,6 +99,12 @@ Module Three_Val <: SEM_VAL.
   Lemma truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top <-> v1 = Top /\ v2 = Top.
   Proof. intros; destruct v1, v2; simpl; intuition; inversion H. Qed.
 
+  Lemma truth_or_false_iff : forall v1 v2, truth_or v1 v2 = Btm <-> v1 = Btm /\ v2 = Btm.
+  Proof. intros; destruct v1, v2; simpl; intuition; inversion H. Qed.
+
+  Lemma truth_and_false_iff : forall v1 v2, truth_and v1 v2 = Btm <-> v1 = Btm \/ v2 = Btm.
+  Proof. intros; destruct v1, v2; simpl; intuition; inversion H0. Qed.
+
   Lemma tautology_1 : truth_not Btm = Top. Proof. intuition. Qed.
   Lemma tautology_2 : truth_not Top = Btm. Proof. intuition. Qed.
   Lemma tautology_3 : forall v, truth_and v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
@@ -138,6 +146,12 @@ Module Bool_Val <: SEM_VAL.
 
   Lemma truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top <-> v1 = Top /\ v2 = Top.
   Proof. intros; simpl; apply andb_true_iff. Qed.
+
+  Lemma truth_or_false_iff : forall v1 v2, truth_or v1 v2 = Btm <-> v1 = Btm /\ v2 = Btm.
+  Proof. intros; simpl; apply orb_false_iff. Qed.
+
+  Lemma truth_and_false_iff : forall v1 v2, truth_and v1 v2 = Btm <-> v1 = Btm \/ v2 = Btm.
+  Proof. intros; simpl; apply andb_false_iff. Qed.
 
   Lemma tautology_1 : truth_not Btm = Top. Proof. intuition. Qed.
   Lemma tautology_2 : truth_not Top = Btm. Proof. intuition. Qed.
@@ -899,11 +913,14 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (S: N
       end.
 
     (* Elimination of min and max doesn't change the validity of boolean forms *)
-    Lemma eliminate_ok: forall bf, satisfied (ZF_BF bf) <-> satisfied (eliminateMinMax bf).
+    Lemma eliminate_ok: forall z, (satisfied (ZF_BF z) <-> satisfied (eliminateMinMax z)) /\
+                                   (dissatisfied (ZF_BF z) <-> dissatisfied (eliminateMinMax z)).
     Proof.
-      destruct bf; simpl; try tauto;
-      repeat rewrite satisfied_unfold;
+      split.
+      destruct z; simpl; try tauto; repeat rewrite satisfied_unfold;
       simpl; rewrite truth_or_true_iff; repeat rewrite truth_and_true_iff; tauto.
+      destruct z; simpl; try tauto; repeat rewrite dissatisfied_unfold;
+      simpl; rewrite truth_or_false_iff; repeat rewrite truth_and_false_iff; tauto.
     Qed.
 
     Inductive SimpResult (f : ZF) :=
