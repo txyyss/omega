@@ -35,6 +35,26 @@ Module InfSolver (sv:STRVAR) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
   (* Variable domain is integers and constant domain is integers with infinity. *)
   Module I2F := ArithSemantics IntToInfinity sv VAL S InfRel.
 
+  Section RealExtension.
+
+    Lemma exists_extension_sat: forall x P, IA.satisfied (IA.ZF_Exists x PureInfinity.Q_Z P) ->
+                                            IA.satisfied (IA.ZF_Exists x PureInfinity.Q_ZE P).
+    Proof. intros; rewrite IA.satisfied_unfold in *; destruct H as [x0 H]; simpl in *; exists (ZE_Fin x0); trivial. Qed.
+
+    Lemma forall_extension_sat: forall x P, IA.satisfied (IA.ZF_Forall x PureInfinity.Q_ZE P) ->
+                                            IA.satisfied (IA.ZF_Forall x PureInfinity.Q_Z P).
+    Proof. intros; rewrite IA.satisfied_unfold in *; intros; simpl in *; apply H. Qed.
+    
+    Lemma exists_extension_dissat: forall x P, IA.dissatisfied (IA.ZF_Exists x PureInfinity.Q_ZE P) ->
+                                               IA.dissatisfied (IA.ZF_Exists x PureInfinity.Q_Z P).
+    Proof. intros; rewrite IA.dissatisfied_unfold in *; intros; simpl in *; apply H. Qed.
+
+    Lemma forall_extension_dissat: forall x P, IA.dissatisfied (IA.ZF_Forall x PureInfinity.Q_Z P) ->
+                                            IA.dissatisfied (IA.ZF_Forall x PureInfinity.Q_ZE P).
+    Proof. intros; rewrite IA.dissatisfied_unfold in *; destruct H as [x0 H]; simpl in *; exists (ZE_Fin x0); trivial. Qed.
+
+  End RealExtension.
+
   Section InfinityTransformation.
 
     (* Transform expressions in IA to I2F *)
@@ -664,7 +684,8 @@ Module InfSolver (sv:STRVAR) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
       apply (IHz1 v x) in H; apply (IHz2 v x) in H0; destruct H, H0; rewrite H, H0; exists (x2 + x3)%Z; auto.
       apply numneg_finite in H; destruct H, H; apply (IHz v x) in H; destruct H; rewrite H; exists (- x1)%Z; auto.
       apply numplus_finite in H; destruct H, H, H; destruct H0; apply numneg_finite in H0; destruct H0, H0;
-      apply (IHz1 v x) in H; apply (IHz2 v x) in H0; destruct H, H0; rewrite H, H0; rewrite <- H2 in H1; exists (x3 - x4)%Z; auto.
+      apply (IHz1 v x) in H; apply (IHz2 v x) in H0; destruct H, H0;
+      rewrite H, H0; rewrite <- H2 in H1; exists (x3 - x4)%Z; auto.
       apply nummult_finite in H;
         destruct H, H. rewrite H; simpl; exists 0%Z; auto.
       destruct H; apply (IHz v x) in H; destruct H; rewrite H.
@@ -745,10 +766,12 @@ variable is positive infinity and constant is negative. *)
                                    destruct SSS as [pr S1]; rewrite S1; rewrite l; auto.
 
     (* Substitution keeps the infiniteness of expressions *)
-    Lemma inf_subst2inf: forall z v x, I2F.dexp2ZE z = Some ZE_Inf ->
-                                       I2F.dexp2ZE (I2F.subst_exp (v, @IntToInfinity.conv tt x) z) = Some ZE_Inf
-                                       with neginf_subst2neginf: forall z v x, I2F.dexp2ZE z = Some ZE_NegInf ->
-                                                                               I2F.dexp2ZE (I2F.subst_exp (v, @IntToInfinity.conv tt x) z) = Some ZE_NegInf.
+    Lemma inf_subst2inf:
+      forall z v x,
+        I2F.dexp2ZE z = Some ZE_Inf ->
+        I2F.dexp2ZE (I2F.subst_exp (v, @IntToInfinity.conv tt x) z) = Some ZE_Inf
+        with neginf_subst2neginf: forall z v x, I2F.dexp2ZE z = Some ZE_NegInf ->
+                                                I2F.dexp2ZE (I2F.subst_exp (v, @IntToInfinity.conv tt x) z) = Some ZE_NegInf.
 
     Proof.
       induction z; simpl; intros; auto.
@@ -854,7 +877,8 @@ variable is positive infinity and constant is negative. *)
       apply (IHz1 v x) in H; rewrite H; simpl; auto.
       destruct H.
       apply (IHz2 v x) in H; rewrite H.
-      unfold IntToInfinity.N.num_plus; destruct (I2F.dexp2ZE (I2F.subst_exp (v, IntToInfinity.conv x) z1)); auto; destruct z; auto.
+      unfold IntToInfinity.N.num_plus; destruct (I2F.dexp2ZE (I2F.subst_exp (v, IntToInfinity.conv x) z1));
+      auto; destruct z; auto.
       destruct H, H.
       apply (inf_subst2inf z1 v x) in H;
         apply (neginf_subst2neginf z2 v x) in H0;
@@ -1025,15 +1049,17 @@ variable is positive infinity and constant is negative. *)
   End IntegerTransformation.
 
   (* Transformation from IA to FA *)
-  Definition T (f : IA.ZF) : FA.ZF := int_trans (inf_trans (f)).
+  Definition T (f : IA.ZF) : FA.ZF := FA.simplifyZF (int_trans (inf_trans (IA.simplifyZF f))).
 
   (* The transformation from IA to FA keeps the validity *)
   Theorem valid_eq: forall f, (IA.satisfied f <-> FA.satisfied (T f)) /\
                               (IA.dissatisfied f <-> FA.dissatisfied (T f)).
   Proof.
     intros; unfold T; split;
-    destruct (inf_trans_ok f);
-    destruct (int_trans_ok (inf_trans f));
+    destruct (IA.simplify_ok f);
+    destruct (inf_trans_ok (IA.simplifyZF f));
+    destruct (int_trans_ok (inf_trans (IA.simplifyZF f)));
+    destruct (FA.simplify_ok (int_trans (inf_trans (IA.simplifyZF f))));
     intuition.
   Qed.
 
