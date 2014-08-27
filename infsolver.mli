@@ -1652,6 +1652,11 @@ module InfSolverExtract :
     val noneVal : Three_Val.coq_Val_Impl
    end
   
+  module Three_Val_False : 
+   sig 
+    val noneVal : Three_Val.coq_Val
+   end
+  
   module IS : 
    sig 
     module InfRel : 

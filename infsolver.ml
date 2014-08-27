@@ -4200,6 +4200,8 @@ module InfSolverExtract =
   
   module Three_Val_Rel = None3ValRel
   
+  module Three_Val_False = NoneAlwaysFalse(Three_Val)
+  
   module IS = InfSolver(Coq_sv)(Bool_Val)(None_False_Bool)
   
   (** val coq_Z_of_bool : bool -> z **)
