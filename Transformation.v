@@ -8,17 +8,7 @@ Open Scope string_scope.
 
 Import ZInfinity.
 
-(* String Variable Type for Extraction  *)
-Module Type STRVAR <: VARIABLE.
-  Parameter var : Type. (* who konws what it is, but in reality it's OCaml string *)
-  Parameter var_eq_dec : forall v1 v2 : var, {v1 = v2} + {v1 <> v2}.
-  Parameter var2string : var -> string.
-  Parameter string2var : string -> var.
-  Axiom var2String2var : forall v, string2var(var2string v) = v.
-  Axiom String2var2String : forall s, var2string(string2var s) = s.
-End STRVAR.
-
-Module InfSolver (sv:STRVAR) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
+Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
   Import sv.
   Import VAL.
   Import S.
