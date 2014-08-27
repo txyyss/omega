@@ -24,11 +24,11 @@ Module InfSolverExtract (sv: STRVAR).
  
  Module Three_Val_False := NoneAlwaysFalse Three_Val.
  
- Module IS := InfSolver sv Bool_Val None_False_Bool.   (* Two Value Logic and None is always False *)
+ (* Module IS := InfSolver sv Bool_Val None_False_Bool.   (* Two Value Logic and None is always False *) *)
  
  (* Module IS := InfSolver sv Three_Val Three_Val_Rel. (* Use Three Value Logic and None is Unknown *) *)
 
- (* Module IS := InfSolver sv Three_Val Three_Val_Rel. (* Use Three Value Logic and None is False *) *)
+Module IS := InfSolver sv Three_Val Three_Val_Rel. (* Use Three Value Logic and None is False *) 
 
 (* Extraction Algorithms *)
 Open Scope Z_scope.
@@ -156,7 +156,7 @@ end.
 
 Fixpoint convert_ZF_to_IAZF_BF (bf: ZBF ZE) : IS.IA.ZBF :=
 match bf with
-  | ZBF_Const b => IS.IA.ZBF_Const b
+  | ZBF_Const b => if b then IS.IA.ZBF_Const Three_Val.VTrue else IS.IA.ZBF_Const Three_Val.VFalse
   | ZBF_Lt e1 e2 => IS.IA.ZBF_Lt (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
   | ZBF_Lte e1 e2 => IS.IA.ZBF_Lte (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
   | ZBF_Gt e1 e2 => IS.IA.ZBF_Gt (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
@@ -191,7 +191,10 @@ end.
 
 Fixpoint convert_FAZF_to_ZF_BF (bf: IS.FA.ZBF) :ZBF sv.var :=
 match bf with
-  | IS.FA.ZBF_Const b => ZBF_Const sv.var b
+  | IS.FA.ZBF_Const b => match b with 
+                           | Three_Val.VTrue => ZBF_Const sv.var true
+                           | _ => ZBF_Const sv.var false
+                         end
   | IS.FA.ZBF_Lt e1 e2 => ZBF_Lt sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
   | IS.FA.ZBF_Lte e1 e2 => ZBF_Lte sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
   | IS.FA.ZBF_Gt e1 e2 => ZBF_Gt sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)

@@ -1661,13 +1661,13 @@ module InfSolverExtract :
    sig 
     module InfRel : 
      sig 
-      val num_leq : ZInfinity.coq_A -> ZInfinity.coq_A -> Bool_Val.coq_Val
+      val num_leq : ZInfinity.coq_A -> ZInfinity.coq_A -> Three_Val.coq_Val
      end
     
     module FinRel : 
      sig 
       val num_leq :
-        ZNumLattice.coq_A -> ZNumLattice.coq_A -> Bool_Val.coq_Val
+        ZNumLattice.coq_A -> ZNumLattice.coq_A -> Three_Val.coq_Val
      end
     
     module IA : 
@@ -1693,7 +1693,7 @@ module InfSolverExtract :
         -> 'a1) -> coq_ZExp -> 'a1
       
       type coq_ZBF =
-      | ZBF_Const of Bool_Val.coq_Val
+      | ZBF_Const of Three_Val.coq_Val
       | ZBF_Lt of coq_ZExp * coq_ZExp
       | ZBF_Lte of coq_ZExp * coq_ZExp
       | ZBF_Gt of coq_ZExp * coq_ZExp
@@ -1704,14 +1704,14 @@ module InfSolverExtract :
       | ZBF_Neq of coq_ZExp * coq_ZExp
       
       val coq_ZBF_rect :
-        (Bool_Val.coq_Val -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
+        (Three_Val.coq_Val -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp ->
         coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) -> coq_ZBF -> 'a1
       
       val coq_ZBF_rec :
-        (Bool_Val.coq_Val -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
+        (Three_Val.coq_Val -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp ->
@@ -1755,7 +1755,7 @@ module InfSolverExtract :
       
       val dexp2ZE : coq_ZExp -> PureInfinity.N.coq_A
       
-      val dzbf2bool : coq_ZBF -> Bool_Val.coq_Val
+      val dzbf2bool : coq_ZBF -> Three_Val.coq_Val
       
       val length_zform : coq_ZF -> nat
       
@@ -1817,7 +1817,7 @@ module InfSolverExtract :
         coq_ZExp -> 'a1
       
       type coq_ZBF =
-      | ZBF_Const of Bool_Val.coq_Val
+      | ZBF_Const of Three_Val.coq_Val
       | ZBF_Lt of coq_ZExp * coq_ZExp
       | ZBF_Lte of coq_ZExp * coq_ZExp
       | ZBF_Gt of coq_ZExp * coq_ZExp
@@ -1828,14 +1828,14 @@ module InfSolverExtract :
       | ZBF_Neq of coq_ZExp * coq_ZExp
       
       val coq_ZBF_rect :
-        (Bool_Val.coq_Val -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
+        (Three_Val.coq_Val -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp ->
         coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) -> coq_ZBF -> 'a1
       
       val coq_ZBF_rec :
-        (Bool_Val.coq_Val -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
+        (Three_Val.coq_Val -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp ->
@@ -1877,7 +1877,7 @@ module InfSolverExtract :
       
       val dexp2ZE : coq_ZExp -> PureInt.N.coq_A
       
-      val dzbf2bool : coq_ZBF -> Bool_Val.coq_Val
+      val dzbf2bool : coq_ZBF -> Three_Val.coq_Val
       
       val length_zform : coq_ZF -> nat
       
@@ -1939,7 +1939,7 @@ module InfSolverExtract :
         -> 'a1) -> coq_ZExp -> 'a1
       
       type coq_ZBF =
-      | ZBF_Const of Bool_Val.coq_Val
+      | ZBF_Const of Three_Val.coq_Val
       | ZBF_Lt of coq_ZExp * coq_ZExp
       | ZBF_Lte of coq_ZExp * coq_ZExp
       | ZBF_Gt of coq_ZExp * coq_ZExp
@@ -1950,14 +1950,14 @@ module InfSolverExtract :
       | ZBF_Neq of coq_ZExp * coq_ZExp
       
       val coq_ZBF_rect :
-        (Bool_Val.coq_Val -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
+        (Three_Val.coq_Val -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp ->
         coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) -> coq_ZBF -> 'a1
       
       val coq_ZBF_rec :
-        (Bool_Val.coq_Val -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
+        (Three_Val.coq_Val -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp -> 'a1) ->
         (coq_ZExp -> coq_ZExp -> coq_ZExp -> 'a1) -> (coq_ZExp -> coq_ZExp ->
@@ -2002,7 +2002,7 @@ module InfSolverExtract :
       
       val dexp2ZE : coq_ZExp -> IntToInfinity.N.coq_A
       
-      val dzbf2bool : coq_ZBF -> Bool_Val.coq_Val
+      val dzbf2bool : coq_ZBF -> Three_Val.coq_Val
       
       val length_zform : coq_ZF -> nat
       
@@ -2047,7 +2047,7 @@ module InfSolverExtract :
     
     val inf_trans : IA.coq_ZF -> I2F.coq_ZF
     
-    val embed : Bool_Val.coq_Val -> FA.coq_ZF
+    val embed : Three_Val.coq_Val -> FA.coq_ZF
     
     val coq_FATrue : FA.coq_ZF
     
