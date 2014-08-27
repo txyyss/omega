@@ -1049,17 +1049,15 @@ variable is positive infinity and constant is negative. *)
   End IntegerTransformation.
 
   (* Transformation from IA to FA *)
-  Definition T (f : IA.ZF) : FA.ZF := FA.simplifyZF (int_trans (inf_trans (IA.simplifyZF f))).
+  Definition T (f : IA.ZF) : FA.ZF := int_trans (inf_trans f).
 
   (* The transformation from IA to FA keeps the validity *)
   Theorem valid_eq: forall f, (IA.satisfied f <-> FA.satisfied (T f)) /\
                               (IA.dissatisfied f <-> FA.dissatisfied (T f)).
   Proof.
     intros; unfold T; split;
-    destruct (IA.simplify_ok f);
-    destruct (inf_trans_ok (IA.simplifyZF f));
-    destruct (int_trans_ok (inf_trans (IA.simplifyZF f)));
-    destruct (FA.simplify_ok (int_trans (inf_trans (IA.simplifyZF f))));
+    destruct (inf_trans_ok f);
+    destruct (int_trans_ok (inf_trans f));
     intuition.
   Qed.
 
