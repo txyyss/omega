@@ -865,7 +865,7 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZER
       forall z v, I2F.num_mult_nat z v = None ->
                   (z <> 0 /\ v = None) \/
                   (z = 0 /\ (v = Some ZE_Inf \/ v = Some ZE_NegInf \/ v = None) /\
-                   (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => None end)) \/ 
+                   (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => None end)) \/
                   (z = 0 /\ v = None /\
                    (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => x end)).
     Proof.
@@ -890,7 +890,7 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZER
       forall z v, I2F.num_mult z v = None ->
                   ((z <> 0)%Z /\ v = None) \/
                   (z = 0%Z /\ (v = Some ZE_Inf \/ v = Some ZE_NegInf \/ v = None) /\
-                   (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => None end)) \/ 
+                   (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => None end)) \/
                   (z = 0%Z /\ v = None /\
                    (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => x end)).
     Proof.
