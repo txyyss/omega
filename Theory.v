@@ -459,8 +459,73 @@ Module IntToInfinity <: SEMANTICS_INPUT.
   Definition conv {q : Q} (x : QT q) := Some (ZE_Fin x).
 End IntToInfinity.
 
-Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (L : LEQ_RELATION I.N VAL).
-  Import I N V VAL S L.
+Module Type ZERO_PRODUCT (NUM : NUMBER).
+  Import NUM.
+  Parameter zero_times: A -> A.
+End ZERO_PRODUCT.
+
+Module Type ZERO_FIN <: ZERO_PRODUCT ZNumLattice.
+  Import ZNumLattice.
+  Parameter zero_times: A -> A.
+  Axiom all_is_zero: forall x, zero_times x = 0%Z.
+End ZERO_FIN.
+
+Module FinZero <: ZERO_FIN.
+  Import ZNumLattice.
+  Definition zero_times (_ : A) := 0%Z.
+  Lemma all_is_zero: forall x, zero_times x = 0%Z.
+  Proof. unfold zero_times; intuition. Qed.
+End FinZero.
+
+Module Type ZERO_INF <: ZERO_PRODUCT ZInfinity.
+  Import ZInfinity.
+  Parameter zero_times: A -> A.
+  Axiom zero_times_spec: (forall x, zero_times x = Some (ZE_Fin 0)) \/
+                         (forall x, zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => None end) \/
+                         (forall x, zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => x end).
+End ZERO_INF.
+
+Module InfZeroAll <: ZERO_INF.
+  Import ZInfinity.
+  Definition zero_times (_ : A) := Some (ZE_Fin 0).
+  Lemma zero_times_spec: (forall x, zero_times x = Some (ZE_Fin 0)) \/
+                         (forall x, zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => None end) \/
+                         (forall x, zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => x end).
+  Proof. left; unfold zero_times; intuition. Qed.
+
+End InfZeroAll.
+
+Module InfZeroFinOnly <: ZERO_INF.
+  Import ZInfinity.
+  Definition zero_times (x : A) :=
+    match x with
+      | Some (ZE_Fin _) => Some (ZE_Fin 0)
+      | _ => None
+    end.
+  Lemma zero_times_spec: (forall x, zero_times x = Some (ZE_Fin 0)) \/
+                         (forall x, zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => None end) \/
+                         (forall x, zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => x end).
+  Proof. right; left; unfold zero_times; intuition. Qed.
+
+End InfZeroFinOnly.
+
+Module InfZeroInf <: ZERO_INF.
+  Import ZInfinity.
+  Definition zero_times (x : A) :=
+    match x with
+      | Some (ZE_Fin _) => Some (ZE_Fin 0)
+      | _ => x
+    end.
+  Lemma zero_times_spec: (forall x, zero_times x = Some (ZE_Fin 0)) \/
+                         (forall x, zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => None end) \/
+                         (forall x, zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => x end).
+  Proof. right; right; unfold zero_times; intuition. Qed.
+
+End InfZeroInf.
+
+Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
+       (S: NONE_RELATION VAL) (L : LEQ_RELATION I.N VAL) (ZT : ZERO_PRODUCT I.N).
+  Import I N V VAL S L ZT.
 
   (* Syntax *)
   Section OriginalForm.
@@ -504,14 +569,18 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (S: N
     (* Definition of constant multiplication of natural numbers *)
     Fixpoint num_mult_nat (n : nat) (x : A) : A :=
       match n with
-        | O   => Const0
+        | O   => zero_times x
+        | S O => x
         | S n => num_plus x (num_mult_nat n x)
       end.
+
+    Lemma num_mult_nat_2_unfold: forall n x, num_mult_nat (S (S n)) x = num_plus x (num_mult_nat (S n) x).
+    Proof. induction n; intros; [simpl; auto | remember (S (S n)); simpl; destruct n0;[ discriminate Heqn0 | auto]]. Qed.
 
     (* Definition of constant multiplication of integers *)
     Definition num_mult (z : Z) (exp : A) : A :=
       match z with
-        | Z0     => Const0
+        | Z0     => zero_times exp
         | Zpos x => num_mult_nat (nat_of_P x) exp
         | Zneg x => num_neg (num_mult_nat (nat_of_P x) exp)
       end.

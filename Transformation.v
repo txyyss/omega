@@ -8,7 +8,7 @@ Open Scope string_scope.
 
 Import ZInfinity.
 
-Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
+Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZERO_FIN) (IZT : ZERO_INF).
   Import sv.
   Import VAL.
   Import S.
@@ -17,13 +17,13 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
   Module FinRel := FinLeqRelation VAL.
 
   (* Both variable and constant domain can be integers with infinity. *)
-  Module IA := ArithSemantics PureInfinity sv VAL S InfRel.
+  Module IA := ArithSemantics PureInfinity sv VAL S InfRel IZT.
 
   (* Both variable and constant domain are integers. *)
-  Module FA := ArithSemantics PureInt sv VAL S FinRel.
+  Module FA := ArithSemantics PureInt sv VAL S FinRel FZT.
 
   (* Variable domain is integers and constant domain is integers with infinity. *)
-  Module I2F := ArithSemantics IntToInfinity sv VAL S InfRel.
+  Module I2F := ArithSemantics IntToInfinity sv VAL S InfRel IZT.
 
   Section RealExtension.
 
@@ -34,7 +34,7 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
     Lemma forall_extension_sat: forall x P, IA.satisfied (IA.ZF_Forall x PureInfinity.Q_ZE P) ->
                                             IA.satisfied (IA.ZF_Forall x PureInfinity.Q_Z P).
     Proof. intros; rewrite IA.satisfied_unfold in *; intros; simpl in *; apply H. Qed.
-    
+
     Lemma exists_extension_dissat: forall x P, IA.dissatisfied (IA.ZF_Exists x PureInfinity.Q_ZE P) ->
                                                IA.dissatisfied (IA.ZF_Exists x PureInfinity.Q_Z P).
     Proof. intros; rewrite IA.dissatisfied_unfold in *; intros; simpl in *; apply H. Qed.
@@ -502,38 +502,47 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
           end
       end.
 
+    Ltac solve_b :=
+      repeat match goal with
+               |[H: Some (ZE_Fin _) = Some (ZE_Fin _) |- _] => injection H; intro; clear H
+               |[H: ?X = ?Y |- ?Y = ?X] => rewrite H; trivial
+               |[H: context[match ?v with _ => _ end] |- _] => destruct v
+               |[H: None = Some _ |- _] => discriminate H
+               |[H: Some _ = None |- _] => discriminate H
+               |[H: Some ZE_Inf = Some (ZE_Fin _) |- _] => discriminate H
+               |[H: Some ZE_NegInf = Some (ZE_Fin _) |- _] => discriminate H
+               |[H: Some (ZE_Fin _) = Some ZE_Inf  |- _] => discriminate H
+               |[H: Some (ZE_Fin _) = Some ZE_NegInf |- _] => discriminate H
+               |[H: Some ZE_NegInf = Some ZE_Inf |- _] => discriminate H
+               |[H: Some ZE_Inf = Some ZE_NegInf |- _] => discriminate H
+             end.
+
     (* If natural number product is finite, then either the constant is zero or the variable is finite. *)
     Lemma nat_nummult_finite: forall c v x,
                                 I2F.num_mult_nat c v = Some (IntToInfinity.N.ZE_Fin x)
                                 -> ((c = 0 /\ x = 0%Z) \/ (exists n, v = Some (ZE_Fin n) /\ FA.num_mult_nat c n = x)).
     Proof.
-      induction c; simpl; intros.
-      left; split; auto; injection H; auto.
-      apply numplus_finite in H.
-      destruct H, H, H.
-      destruct H0.
-      right; exists x0.
-      split; auto.
+      induction c; intros.
+      left; split; auto; destruct IZT.zero_times_spec as [? | [? | ?]]; rewrite H0 in H; clear H0; solve_b.
+      right; simpl in H.
+
+      destruct c. exists x; intuition. apply numplus_finite in H.
+      destruct H as [z1 [z2 [? [? ?]]]].
+      exists z1; split; auto.
       apply IHc in H0.
-      destruct H0, H0.
-      rewrite H0.
-      rewrite H2 in H1.
-      simpl; auto.
-      destruct H0.
-      assert (x2 = x0).
-      rewrite H in H0.
-      injection H0; auto.
-      rewrite H3 in H2.
-      rewrite H2; auto.
+      destruct H0 as [[? ?] | [n [? ?]]].
+      discriminate H0.
+      rewrite H in H0; injection H0; intro; rewrite H3 in *; clear H3 z1.
+      rewrite FA.num_mult_nat_2_unfold, H2; unfold PureInt.N.num_plus; auto.
     Qed.
 
-    (* If integer product is finite, then either the constant is zero or the variable is finite. *)
+    (* If product is finite, then either the constant is zero or the variable is finite. *)
     Lemma nummult_finite: forall c v x, I2F.num_mult c v = Some (IntToInfinity.N.ZE_Fin x)
                                         -> (c = 0%Z /\ x = 0%Z) \/
                                            (exists n, v = Some (ZE_Fin n) /\ FA.num_mult c n = x).
     Proof.
       destruct c; simpl; intros.
-      left; split; auto; injection H; auto.
+      left; split; auto; destruct IZT.zero_times_spec as [? | [? | ?]]; rewrite H0 in H; clear H0; solve_b.
       apply nat_nummult_finite in H.
       destruct H.
       destruct H.
@@ -583,10 +592,9 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
         auto.
 
       apply nummult_finite in H.
-      destruct H, H.
-      rewrite H, H0.
-      simpl; auto.
-      destruct H.
+      destruct H as [[? ?] | [? [? ?]]].
+      rewrite H, H0 in *; clear H H0; simpl.
+      rewrite FZT.all_is_zero; trivial.
       apply IHz in H.
       rewrite H; auto.
     Qed.
@@ -645,17 +653,20 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
     Lemma nat_nummult_eq: forall z x, I2F.num_mult_nat z (Some (ZE_Fin x)) = Some (ZE_Fin (FA.num_mult_nat z x)).
     Proof.
       induction z; intros.
-      auto.
+      simpl; destruct IZT.zero_times_spec as [? | [? | ?]];
+      rewrite FZT.all_is_zero, H; trivial.
+
       unfold I2F.num_mult_nat; fold I2F.num_mult_nat;
       unfold FA.num_mult_nat; fold FA.num_mult_nat;
-      rewrite IHz; auto.
+      destruct z; [auto | rewrite IHz; auto].
     Qed.
 
     (* The products in I2F and FA are equal for finite integer number *)
     Lemma nummult_eq: forall z x, I2F.num_mult z (Some (ZE_Fin x)) = Some (ZE_Fin (FA.num_mult z x)).
     Proof.
       destruct z; intros.
-      simpl; auto.
+      simpl; destruct IZT.zero_times_spec as [? | [? | ?]];
+      rewrite FZT.all_is_zero, H; trivial.
       unfold I2F.num_mult, FA.num_mult.
       apply nat_nummult_eq.
       unfold I2F.num_mult, FA.num_mult.
@@ -676,72 +687,94 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL).
       apply numplus_finite in H; destruct H, H, H; destruct H0; apply numneg_finite in H0; destruct H0, H0;
       apply (IHz1 v x) in H; apply (IHz2 v x) in H0; destruct H, H0;
       rewrite H, H0; rewrite <- H2 in H1; exists (x3 - x4)%Z; auto.
-      apply nummult_finite in H;
-        destruct H, H. rewrite H; simpl; exists 0%Z; auto.
-      destruct H; apply (IHz v x) in H; destruct H; rewrite H.
-      exists (FA.num_mult z x1).
-      simpl; apply nummult_eq.
+
+      destruct (nummult_finite _ _ _ H) as [[? ?] | [? [? ?]]].
+      rewrite H0, H1 in *; clear H0 H1 z c1; simpl in *.
+      destruct IZT.zero_times_spec as [? | [? | ?]]; exists 0%Z.
+      rewrite H0; trivial.
+
+      destruct (I2F.dexp2ZE z0) eqn : ?; rewrite H0 in H; solve_b;
+      assert (S : Some (IntToInfinity.N.ZE_Fin z) = Some (ZE_Fin z)) by trivial; specialize (IHz v x z S);
+      destruct IHz as [c2 IHz]; rewrite IHz, H0; trivial.
+
+      destruct (I2F.dexp2ZE z0) eqn : ?; rewrite H0 in H; solve_b;
+      assert (S : Some (IntToInfinity.N.ZE_Fin z) = Some (ZE_Fin z)) by trivial; specialize (IHz v x z S);
+      destruct IHz as [c2 IHz]; rewrite IHz, H0; trivial.
+
+      apply (IHz v x) in H0; destruct H0; rewrite H0; exists (FA.num_mult z x1); simpl; apply nummult_eq.
     Qed.
 
     (* If the product of natural number multiplication is positive infinity, then the variable is positive infinity. *)
-    Lemma nat_nummult_inf: forall z v, I2F.num_mult_nat z v = Some ZE_Inf -> (z > 0 /\ v = Some ZE_Inf).
+    Lemma nat_nummult_inf:
+      forall z v, I2F.num_mult_nat z v = Some ZE_Inf ->
+                  (z > 0 /\ v = Some ZE_Inf) \/
+                  (z = 0 /\ v = Some ZE_Inf /\
+                   (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => x end)).
     Proof.
       induction z; simpl; intros.
-      discriminate H.
-      split. omega.
+      destruct IZT.zero_times_spec as [? | [? | ?]]; rewrite H0 in H; solve_b; right; intuition.
+      left; split; intuition.
+      destruct z; trivial.
+
       apply numplus_inf in H.
-      destruct H, H, H.
-      apply IHz in H0. destruct H0; auto.
-      auto.
-      apply IHz in H0. destruct H0; auto.
+      destruct H as [[[? ?] ?] | [[? [? ?]] | [? ?]]]; auto.
+      apply IHz in H0; destruct H0 as [[? ?] | [? [? ?]]]; auto.
     Qed.
 
     (* If the product of natural number multiplication is negative infinity, then the variable is negative infinity. *)
-    Lemma nat_nummult_neginf: forall z v, I2F.num_mult_nat z v = Some ZE_NegInf -> (z > 0 /\ v = Some ZE_NegInf).
+    Lemma nat_nummult_neginf:
+      forall z v, I2F.num_mult_nat z v = Some ZE_NegInf ->
+                  (z > 0 /\ v = Some ZE_NegInf) \/
+                  (z = 0 /\ v = Some ZE_NegInf /\
+                   (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => x end)).
     Proof.
       induction z; simpl; intros.
-      discriminate H.
-      split. omega.
+      destruct IZT.zero_times_spec as [? | [? | ?]]; rewrite H0 in H; solve_b; right; intuition.
+      left; split; intuition.
+      destruct z; trivial.
+
       apply numplus_neginf in H.
-      destruct H, H, H.
-      apply IHz in H0. destruct H0; auto.
-      auto.
-      apply IHz in H0. destruct H0; auto.
+      destruct H as [[[? ?] ?] | [[? [? ?]] | [? ?]]]; auto.
+      apply IHz in H0; destruct H0 as [[? ?] | [? [? ?]]]; auto.
     Qed.
 
-    (* If the product of integer multiplication is positive infinity, then
-either variable is positive infinity and constant is positive or
-variable is negative infinity and constant is negative. *)
-    Lemma nummult_inf: forall z v, I2F.num_mult z v = Some ZE_Inf ->
-                                   (((z > 0)%Z /\ v = Some ZE_Inf) \/ ((z < 0)%Z /\ v = Some ZE_NegInf)).
+    (* If the product of integer multiplication is positive infinity, *)
+    (* then either variable is positive infinity and constant is positive *)
+    (* or variable is negative infinity and constant is negative. *)
+    Lemma nummult_inf:
+      forall z v, I2F.num_mult z v = Some ZE_Inf ->
+                  (((z > 0)%Z /\ v = Some ZE_Inf) \/
+                   ((z < 0)%Z /\ v = Some ZE_NegInf) \/
+                   ((z = 0)%Z /\ v = Some ZE_Inf /\
+                    (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => x end))).
     Proof.
       destruct z; simpl; intros.
-      discriminate H.
-      apply nat_nummult_inf in H; destruct H.
-      left. split; auto.
-      assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos; omega.
-      apply numneg_inf in H. apply nat_nummult_neginf in H; destruct H.
-      right; split; auto.
-      apply Pos2Z.neg_is_neg.
+      destruct IZT.zero_times_spec as [? | [? | ?]]; rewrite H0 in H; solve_b; right; right; intuition.
+      assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos.
+      apply nat_nummult_inf in H; destruct H as [[? ?] | [? ?]]; left; split; intuition.
+      apply numneg_inf in H; apply nat_nummult_neginf in H; destruct H as [[? ?] | [? [? ?]]];
+      right; left; split; auto; apply Pos2Z.neg_is_neg.
     Qed.
 
-    (* If the product of integer multiplication is negative infinity, then
-either variable is negative infinity and constant is positive or
-variable is positive infinity and constant is negative. *)
-    Lemma nummult_neginf: forall z v, I2F.num_mult z v = Some ZE_NegInf ->
-                                      (((z > 0)%Z /\ v = Some ZE_NegInf) \/ ((z < 0)%Z /\ v = Some ZE_Inf)).
+    (* If the product of integer multiplication is negative infinity, *)
+    (* then either variable is negative infinity and constant is positive *)
+    (* or variable is positive infinity and constant is negative. *)
+    Lemma nummult_neginf:
+      forall z v, I2F.num_mult z v = Some ZE_NegInf ->
+                  (((z > 0)%Z /\ v = Some ZE_NegInf) \/
+                   ((z < 0)%Z /\ v = Some ZE_Inf) \/
+                   ((z = 0)%Z /\ v = Some ZE_NegInf /\
+                    (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => x end))).
     Proof.
       destruct z; simpl; intros.
-      discriminate H.
-      apply nat_nummult_neginf in H; destruct H.
-      left. split; auto.
-      assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos; omega.
-      apply numneg_neginf in H. apply nat_nummult_inf in H; destruct H.
-      right; split; auto.
-      apply Pos2Z.neg_is_neg.
+      destruct IZT.zero_times_spec as [? | [? | ?]]; rewrite H0 in H; solve_b; right; right; intuition.
+      assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos.
+      apply nat_nummult_neginf in H; destruct H as [[? ?] | [? ?]]; left; split; intuition.
+      apply numneg_neginf in H; apply nat_nummult_inf in H; destruct H as [[? ?] | [? [? ?]]];
+      right; left; split; auto; apply Pos2Z.neg_is_neg.
     Qed.
 
-    Ltac solve_mul2inf p IHp:= induction p; auto; unfold I2F.num_mult_nat in *; fold I2F.num_mult_nat in *; rewrite IHp; auto.
+    Ltac solve_mul2inf p IHp:= induction p; auto; rewrite I2F.num_mult_nat_2_unfold in *; rewrite IHp; auto.
 
     (* positive c * infinity = infinity *)
     Lemma num_mult_nat_inf: forall p, I2F.num_mult_nat (S p) (Some ZE_Inf) = Some ZE_Inf.
@@ -758,11 +791,9 @@ variable is positive infinity and constant is negative. *)
     (* Substitution keeps the infiniteness of expressions *)
     Lemma inf_subst2inf:
       forall z v x,
-        I2F.dexp2ZE z = Some ZE_Inf ->
-        I2F.dexp2ZE (I2F.subst_exp (v, @IntToInfinity.conv tt x) z) = Some ZE_Inf
+        I2F.dexp2ZE z = Some ZE_Inf -> I2F.dexp2ZE (I2F.subst_exp (v, @IntToInfinity.conv tt x) z) = Some ZE_Inf
         with neginf_subst2neginf: forall z v x, I2F.dexp2ZE z = Some ZE_NegInf ->
                                                 I2F.dexp2ZE (I2F.subst_exp (v, @IntToInfinity.conv tt x) z) = Some ZE_NegInf.
-
     Proof.
       induction z; simpl; intros; auto.
       discriminate H.
@@ -786,11 +817,15 @@ variable is positive infinity and constant is negative. *)
       destruct z. discriminate H.
       solve_tonat_infnone p num_mult_nat_inf.
       assert (Z.neg p < 0)%Z by apply Pos2Z.neg_is_neg; omega.
+      destruct H.
       apply (neginf_subst2neginf z0 v x) in H0.
       rewrite H0.
       destruct z. discriminate H.
       assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos; omega.
       solve_tonat_infnone p num_mult_nat_neginf.
+      destruct H as [? [? ?]].
+      specialize (IHz v x H0). rewrite IHz.
+      rewrite H; apply H1.
 
       induction z; simpl; intros; auto.
       discriminate H.
@@ -814,39 +849,65 @@ variable is positive infinity and constant is negative. *)
       destruct z. discriminate H.
       solve_tonat_infnone p num_mult_nat_neginf.
       assert (Z.neg p < 0)%Z by apply Pos2Z.neg_is_neg; omega.
+      destruct H.
       apply (inf_subst2inf z0 v x) in H0.
       rewrite H0.
       destruct z. discriminate H.
       assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos; omega.
       solve_tonat_infnone p num_mult_nat_inf.
+      destruct H as [? [? ?]].
+      specialize (IHz v x H0). rewrite IHz.
+      rewrite H; apply H1.
     Qed.
 
     (* If the product of natural number multiplication is undefined, then the variable is undefined. *)
-    Lemma nat_nummult_none: forall z v, I2F.num_mult_nat z v = None -> (z <> 0 /\ v = None).
+    Lemma nat_nummult_none:
+      forall z v, I2F.num_mult_nat z v = None ->
+                  (z <> 0 /\ v = None) \/
+                  (z = 0 /\ (v = Some ZE_Inf \/ v = Some ZE_NegInf \/ v = None) /\
+                   (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => None end)) \/ 
+                  (z = 0 /\ v = None /\
+                   (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => x end)).
     Proof.
       induction z; simpl; intros.
-      discriminate H.
-      split. omega.
+      destruct IZT.zero_times_spec as [? | [? | ?]]; rewrite H0 in H;
+      [discriminate H | right; left; solve_b; intuition | right; right; solve_b; intuition].
+
+      left; split. omega.
+      destruct z. apply H.
       apply numplus_none in H.
-      destruct H. auto.
-      destruct H. apply IHz. auto.
-      destruct H, H.
-      apply nat_nummult_neginf in H0. destruct H0. rewrite H in H1. discriminate H1.
-      apply nat_nummult_inf in H0. destruct H0. rewrite H in H1. discriminate H1.
+      destruct H as [? | [? | [[? ?] | [? ?]]]].
+      auto.
+      apply (IHz v) in H; destruct H as [[? ?] | [[? ?] | [? ?]]]; auto; discriminate H.
+      apply nat_nummult_neginf in H0. destruct H0. rewrite H in H0. destruct H0. discriminate H1.
+      destruct H0 as [? [? ?]]. rewrite H in H1. discriminate H1.
+      apply nat_nummult_inf in H0.
+      destruct H0 as [[? ?] | [? [? ?]]]; rewrite H in H1; discriminate H1.
     Qed.
 
     (* If the product of integer multiplication is undefined, then the variable is undefined. *)
-    Lemma nummult_none: forall z v, I2F.num_mult z v = None -> ((z <> 0)%Z /\ v = None).
+    Lemma nummult_none:
+      forall z v, I2F.num_mult z v = None ->
+                  ((z <> 0)%Z /\ v = None) \/
+                  (z = 0%Z /\ (v = Some ZE_Inf \/ v = Some ZE_NegInf \/ v = None) /\
+                   (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => None end)) \/ 
+                  (z = 0%Z /\ v = None /\
+                   (forall x, IZT.zero_times x = match x with | Some (ZE_Fin _) => Some (ZE_Fin 0) | _ => x end)).
     Proof.
       destruct z; simpl; intros.
-      discriminate H.
-      split.
-      assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos; omega.
-      apply nat_nummult_none in H. destruct H. auto.
-      split.
-      assert (Z.neg p < 0)%Z by apply Pos2Z.neg_is_neg; omega.
+      destruct IZT.zero_times_spec as [? | [? | ?]]; rewrite H0 in H;
+      [discriminate H | right; left; solve_b; intuition | right; right; solve_b; intuition].
+      assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos; assert (Z.neg p < 0)%Z by apply Pos2Z.neg_is_neg.
+      generalize (Pos2Nat.is_pos p); intro.
+      left; split. omega.
+      apply nat_nummult_none in H. destruct H as [[? ?] | [[? [? ?]] | [? [? ?]]]]; auto. rewrite H in H2; exfalso; intuition.
+      assert (0 < Z.pos p)%Z by apply Pos2Z.is_pos; assert (Z.neg p < 0)%Z by apply Pos2Z.neg_is_neg.
+      left; split. omega.
       apply numneg_none in H.
-      apply nat_nummult_none in H. destruct H. auto.
+      apply nat_nummult_none in H.
+      destruct H as [[? ?] | [[? [? ?]] | [? [? ?]]]]; auto.
+      generalize (Pos2Nat.is_pos p); intro.
+      rewrite H in H4; exfalso; intuition.
     Qed.
 
     (* positive c * undefined = undefined *)
@@ -892,10 +953,15 @@ variable is positive infinity and constant is negative. *)
       apply (neginf_subst2neginf z1 v x) in H.
       apply numneg_inf in H0. apply (neginf_subst2neginf z2 v x) in H0.
       rewrite H, H0. auto.
-      apply nummult_none in H. destruct H. apply (IHz v x) in H0. rewrite H0.
+      apply nummult_none in H. destruct H as [[? ?] | [[? [? ?]] | [? [? ?]]]]. apply (IHz v x) in H0. rewrite H0.
       destruct z; simpl. omega.
       solve_tonat_infnone p num_mult_nat_none.
       solve_tonat_infnone p num_mult_nat_none.
+
+      rewrite H; simpl; destruct H0 as [? | [? | ?]];
+      [apply (inf_subst2inf _ v x) in H0 | apply (neginf_subst2neginf _ v x) in H0 |
+       apply (IHz v x) in H0]; rewrite H0; apply H1.
+      rewrite H; simpl; apply (IHz v x) in H0; rewrite H0; apply H1.
     Qed.
 
     (* Substitution and expression transformation from I2F to IA are commutative. *)

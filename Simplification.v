@@ -1,11 +1,12 @@
 Require Import Omega.
 Require Import Theory.
 
-Module SimplifyArith (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (L : LEQ_RELATION I.N VAL).
+Module SimplifyArith (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
+       (S: NONE_RELATION VAL) (L : LEQ_RELATION I.N VAL) (ZT : ZERO_PRODUCT I.N).
 
-  Module AR := ArithSemantics I V VAL S L.
+  Module AR := ArithSemantics I V VAL S L ZT.
 
-  Import I N V VAL S L AR.
+  Import I N V VAL S L ZT AR.
 
   Ltac solve_bf_simp :=
     repeat match goal with
