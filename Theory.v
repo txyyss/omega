@@ -30,11 +30,8 @@ Module Type SEM_VAL.
   Axiom tautology_2 : truth_not Top = Btm.
   Axiom tautology_3 : forall v, truth_and v v = v.
   Axiom tautology_4 : truth_and Top Btm = Btm.
-  Axiom tautology_5 : truth_and Btm Top = Btm.
-  Axiom tautology_6 : forall v, truth_or v v = v.
-  Axiom tautology_7 : truth_or Top Btm = Top.
-  Axiom tautology_8 : truth_or Btm Top = Top.
-
+  Axiom tautology_5 : forall v, truth_or v v = v.
+  Axiom tautology_6 : truth_or Top Btm = Top.
 End SEM_VAL.
 
 Module Three_Val <: SEM_VAL.
@@ -109,10 +106,8 @@ Module Three_Val <: SEM_VAL.
   Lemma tautology_2 : truth_not Top = Btm. Proof. intuition. Qed.
   Lemma tautology_3 : forall v, truth_and v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
   Lemma tautology_4 : truth_and Top Btm = Btm. Proof. intuition. Qed.
-  Lemma tautology_5 : truth_and Btm Top = Btm. Proof. intuition. Qed.
-  Lemma tautology_6 : forall v, truth_or v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
-  Lemma tautology_7 : truth_or Top Btm = Top. Proof. intuition. Qed.
-  Lemma tautology_8 : truth_or Btm Top = Top. Proof. intuition. Qed.
+  Lemma tautology_5 : forall v, truth_or v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
+  Lemma tautology_6 : truth_or Top Btm = Top. Proof. intuition. Qed.
 
 End Three_Val.
 
@@ -157,10 +152,8 @@ Module Bool_Val <: SEM_VAL.
   Lemma tautology_2 : truth_not Top = Btm. Proof. intuition. Qed.
   Lemma tautology_3 : forall v, truth_and v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
   Lemma tautology_4 : truth_and Top Btm = Btm. Proof. intuition. Qed.
-  Lemma tautology_5 : truth_and Btm Top = Btm. Proof. intuition. Qed.
-  Lemma tautology_6 : forall v, truth_or v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
-  Lemma tautology_7 : truth_or Top Btm = Top. Proof. intuition. Qed.
-  Lemma tautology_8 : truth_or Btm Top = Top. Proof. intuition. Qed.
+  Lemma tautology_5 : forall v, truth_or v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
+  Lemma tautology_6 : truth_or Top Btm = Top. Proof. intuition. Qed.
 
 End Bool_Val.
 
@@ -365,7 +358,6 @@ Module Type NONE_RELATION (VAL : SEM_VAL).
   Axiom none_tautology_2 : truth_and noneVal Top = noneVal.
   Axiom none_tautology_3 : truth_and noneVal Btm = Btm.
   Axiom none_tautology_4 : truth_or noneVal Btm = noneVal.
-  Axiom none_tautology_5 : truth_or Btm noneVal = noneVal.
 End NONE_RELATION.
 
 Module None3ValRel <: NONE_RELATION Three_Val.
@@ -375,27 +367,22 @@ Module None3ValRel <: NONE_RELATION Three_Val.
   Lemma none_tautology_2 : truth_and noneVal Top = noneVal. Proof. intuition. Qed.
   Lemma none_tautology_3 : truth_and noneVal Btm = Btm. Proof. intuition. Qed.
   Lemma none_tautology_4 : truth_or noneVal Btm = noneVal. Proof. intuition. Qed.
-  Lemma none_tautology_5 : truth_or Btm noneVal = noneVal. Proof. intuition. Qed.
-
 End None3ValRel.
 
 Module NoneAlwaysFalse (VAL : SEM_VAL) <: NONE_RELATION VAL.
   Import VAL.
   Definition noneVal := Btm.
   Lemma none_tautology_1 : truth_and noneVal (truth_not noneVal) = noneVal.
-  Proof. unfold noneVal; simpl; rewrite tautology_1, tautology_5; trivial. Qed.
+  Proof. unfold noneVal; simpl; rewrite tautology_1, truth_and_comm, tautology_4; trivial. Qed.
 
   Lemma none_tautology_2 : truth_and noneVal Top = noneVal.
-  Proof. unfold noneVal; simpl; rewrite tautology_5; trivial. Qed.
+  Proof. unfold noneVal; simpl; rewrite truth_and_comm, tautology_4; trivial. Qed.
 
   Lemma none_tautology_3 : truth_and noneVal Btm = Btm.
   Proof. unfold noneVal; simpl; rewrite tautology_3; trivial. Qed.
 
   Lemma none_tautology_4 : truth_or noneVal Btm = noneVal.
-  Proof. unfold noneVal; simpl; rewrite tautology_6; trivial. Qed.
-
-  Lemma none_tautology_5 : truth_or Btm noneVal = noneVal.
-  Proof. unfold noneVal; simpl; rewrite tautology_6; trivial. Qed.
+  Proof. unfold noneVal; simpl; rewrite tautology_5; trivial. Qed.
 
 End NoneAlwaysFalse.
 
@@ -983,7 +970,7 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
 
     (* Elimination of min and max doesn't change the validity of boolean forms *)
     Lemma eliminate_ok: forall z, (satisfied (ZF_BF z) <-> satisfied (eliminateMinMax z)) /\
-                                   (dissatisfied (ZF_BF z) <-> dissatisfied (eliminateMinMax z)).
+                                  (dissatisfied (ZF_BF z) <-> dissatisfied (eliminateMinMax z)).
     Proof.
       split.
       destruct z; simpl; try tauto; repeat rewrite satisfied_unfold;

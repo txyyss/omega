@@ -1,10 +1,6 @@
 Require Import Theory.
 Require Import ZArith.
-Require Import String Ascii.
-Require Import Bool.
-Require Import NPeano.
 Require Import FunctionalExtensionality.
-Open Scope string_scope.
 
 Import ZInfinity.
 
@@ -40,7 +36,7 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZER
     Proof. intros; rewrite IA.dissatisfied_unfold in *; intros; simpl in *; apply H. Qed.
 
     Lemma forall_extension_dissat: forall x P, IA.dissatisfied (IA.ZF_Forall x PureInfinity.Q_Z P) ->
-                                            IA.dissatisfied (IA.ZF_Forall x PureInfinity.Q_ZE P).
+                                               IA.dissatisfied (IA.ZF_Forall x PureInfinity.Q_ZE P).
     Proof. intros; rewrite IA.dissatisfied_unfold in *; destruct H as [x0 H]; simpl in *; exists (ZE_Fin x0); trivial. Qed.
 
   End RealExtension.
@@ -607,15 +603,15 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZER
                | [|- context[truth_not Top]] => rewrite tautology_2
                | [|- context[truth_and ?X ?X]] => rewrite tautology_3
                | [|- context[truth_and Top Btm]] => rewrite tautology_4
-               | [|- context[truth_and Btm Top]] => rewrite tautology_5
-               | [|- context[truth_or ?X ?X]] => rewrite tautology_6
-               | [|- context[truth_or Top Btm]] => rewrite tautology_7
-               | [|- context[truth_or Btm Top]] => rewrite tautology_8
+               | [|- context[truth_and Btm Top]] => rewrite (truth_and_comm Btm Top), tautology_4
+               | [|- context[truth_or ?X ?X]] => rewrite tautology_5
+               | [|- context[truth_or Top Btm]] => rewrite tautology_6
+               | [|- context[truth_or Btm Top]] => rewrite (truth_or_comm Btm Top), tautology_6
                | [|- context[truth_and noneVal (truth_not noneVal)]] => rewrite none_tautology_1
                | [|- context[truth_and noneVal Top]] => rewrite none_tautology_2
                | [|- context[truth_and noneVal Btm]] => rewrite none_tautology_3
                | [|- context[truth_or noneVal Btm]] => rewrite none_tautology_4
-               | [|- context[truth_or Btm noneVal]] => rewrite none_tautology_5
+               | [|- context[truth_or Btm noneVal]] => rewrite truth_or_comm, none_tautology_4
                | [H: I2F.dexp2ZE ?z = Some (IntToInfinity.N.ZE_Fin ?x) |- context[FA.dexp2ZE (int_trans_exp ?z)]]
                  => rewrite (dexp2ZE_int_trans_eq z x)
                | [|- ?X <-> ?X] => tauto

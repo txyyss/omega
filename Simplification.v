@@ -1,4 +1,3 @@
-Require Import Omega.
 Require Import Theory.
 
 Module SimplifyArith (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
