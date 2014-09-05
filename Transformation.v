@@ -609,7 +609,8 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZER
                | [|- context[truth_or Btm Top]] => rewrite (truth_or_comm Btm Top), tautology_6
                | [|- context[truth_and noneVal (truth_not noneVal)]] => rewrite none_tautology_1
                | [|- context[truth_and noneVal Top]] => rewrite none_tautology_2
-               | [|- context[truth_and noneVal Btm]] => rewrite none_tautology_3
+               | [|- context[truth_and Top noneVal]] => rewrite (truth_and_comm Top noneVal), none_tautology_2
+               | [|- context[truth_or (truth_and noneVal Btm) noneVal]] => rewrite none_tautology_3
                | [|- context[truth_or noneVal Btm]] => rewrite none_tautology_4
                | [|- context[truth_or Btm noneVal]] => rewrite truth_or_comm, none_tautology_4
                | [H: I2F.dexp2ZE ?z = Some (IntToInfinity.N.ZE_Fin ?x) |- context[FA.dexp2ZE (int_trans_exp ?z)]]
@@ -623,7 +624,10 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZER
                | [_: (?a <= ?b)%Z, _: ~ (?a <= ?b)%Z |- _] => contradiction
                | [_: ~ (?a <= ?b)%Z, _: ~ (?b <= ?a)%Z |- _] => exfalso; intuition
                | [|- context[truth_and Top noneVal]] => rewrite truth_and_comm, none_tautology_2
-               | [|- context[truth_and Btm noneVal]] => rewrite truth_and_comm, none_tautology_3
+               | [|- context[truth_or noneVal (truth_and noneVal Btm)]] => rewrite truth_or_comm, none_tautology_3
+               | [|- context[truth_or noneVal (truth_and Btm noneVal)]] =>
+                 rewrite truth_or_comm, truth_and_comm, none_tautology_3
+               | [|- context[truth_or (truth_and Btm noneVal) noneVal]] => rewrite truth_and_comm, none_tautology_3
              end.
 
     (* Boolean transformation from I2F to FA keeps the validity. *)

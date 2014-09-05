@@ -32,8 +32,8 @@ Module SimplifyArith (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
              | [H : ?A = ?B |- ?B = ?A ] => rewrite <- H; auto
              | [H : ZF_BF (ZBF_Const Top) = ZF_BF (ZBF_Const Btm) |- _] => inversion H; clear H
              | [H : ZF_BF (ZBF_Const Btm) = ZF_BF (ZBF_Const Top) |- _] => inversion H; clear H
-             | [H : Top = Btm |- _] => generalize bool_inj_not_eq; intro; rewrite H in *; exfalso; intuition
-             | [H : Btm = Top |- _] => generalize bool_inj_not_eq; intro; rewrite H in *; exfalso; intuition
+             | [H : Top = Btm |- _] => generalize top_neq_btm; intro; rewrite H in *; exfalso; intuition
+             | [H : Btm = Top |- _] => generalize top_neq_btm; intro; rewrite H in *; exfalso; intuition
              | [H : ?A = _ |- context[?A]] => rewrite H in *; clear H
              | [H : _ /\ _ |- _] => destruct H
              | [H : ?A <> ?A |- _] => exfalso; apply H; auto
@@ -136,14 +136,14 @@ Module SimplifyArith (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
                let S := fresh "S" in
                let M := fresh "M" in
                destruct (simp_subst_bf_same f v q x) as [H _]; specialize (H _ e); rewrite H in e0; inversion e0 as [S];
-               generalize bool_inj_not_eq; intro M; rewrite S in M; exfalso; apply M; auto
+               generalize top_neq_btm; intro M; rewrite S in M; exfalso; apply M; auto
              | [e : simplifyZF ?f = ZF_BF (ZBF_Const Btm),
                     e0 : simplifyZF (substitute (?v, conv ?q ?x) ?f) = ZF_BF (ZBF_Const Top) |- _] =>
                let H := fresh "H" in
                let S := fresh "S" in
                let M := fresh "M" in
                destruct (simp_subst_bf_same f v q x) as [H _]; specialize (H _ e); rewrite H in e0; inversion e0 as [S];
-               generalize bool_inj_not_eq; intro M; rewrite S in M; exfalso; apply M; auto
+               generalize top_neq_btm; intro M; rewrite S in M; exfalso; apply M; auto
              | [H : simplifyZF ?f = ZF_Not _,
                     e1 : simplifyZF (substitute (?v, conv ?q ?x) ?f) = ZF_BF _,
                          H0 : forall f1 : ZF,
@@ -289,8 +289,8 @@ Module SimplifyArith (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
                      H2 : simplifyZF (substitute (?v, conv ?q ?x) ?f) = ZF_BF (ZBF_Const Btm) |- _ ]
                => let H := fresh "H" in
                   destruct (simp_subst_bf_same f v q x) as [H _]; specialize (H _ H1); rewrite H in H2; clear H; inversion H2
-             | [H : Btm = Top |- _] => generalize bool_inj_not_eq; intro; rewrite H in *; exfalso; intuition
-             | [H : Top = Btm |- _] => generalize bool_inj_not_eq; intro; rewrite H in *; exfalso; intuition
+             | [H : Btm = Top |- _] => generalize top_neq_btm; intro; rewrite H in *; exfalso; intuition
+             | [H : Top = Btm |- _] => generalize top_neq_btm; intro; rewrite H in *; exfalso; intuition
              | [ H1 : simplifyZF ?f = ZF_BF (ZBF_Const ?X),
                       H2 : simplifyZF (substitute (?v, conv ?q ?x) ?f) <> ZF_BF (ZBF_Const ?X) |- _ ] =>
                let H := fresh "H" in
@@ -398,8 +398,8 @@ Module SimplifyArith (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
              | [|- Btm = Top /\ _ <-> Top = Btm] => intuition
              | [|- ?A = ?B <-> ?B = ?A] => intuition
              | [|- ?A = ?A <-> ?B = ?B] => intuition
-             | [H : Btm = Top |- _] => generalize bool_inj_not_eq; intro; rewrite H in *; exfalso; intuition
-             | [H : Top = Btm |- _] => generalize bool_inj_not_eq; intro; rewrite H in *; exfalso; intuition
+             | [H : Btm = Top |- _] => generalize top_neq_btm; intro; rewrite H in *; exfalso; intuition
+             | [H : Top = Btm |- _] => generalize top_neq_btm; intro; rewrite H in *; exfalso; intuition
              | [|- satisfied ?A /\ satisfied ?B <-> satisfied (ZF_And ?A ?B)] =>
                split; intros; [rewrite satisfied_unfold | rewrite satisfied_unfold in * |-]; assumption
              | [|- dissatisfied ?A \/ dissatisfied ?B <-> dissatisfied (ZF_And ?A ?B)] =>
@@ -423,7 +423,7 @@ Module SimplifyArith (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
                let H := fresh "H"
                in split; intro H;
                   [rewrite satisfied_unfold; destruct H as [H | H];
-                   [assumption | generalize bool_inj_not_eq; intro; rewrite H in *; exfalso; intuition] |
+                   [assumption | generalize top_neq_btm; intro; rewrite H in *; exfalso; intuition] |
                    rewrite satisfied_unfold in H; left; apply H]
              | [|- dissatisfied ?X <-> satisfied (ZF_Not ?X)] => rewrite satisfied_unfold; tauto
              | [|- satisfied ?X <-> dissatisfied (ZF_Not ?X)] => rewrite dissatisfied_unfold; tauto

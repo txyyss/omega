@@ -17,15 +17,15 @@ Module Type SEM_VAL.
   Parameter truth_not : Val -> Val.
   Parameter Top : Val.
   Parameter Btm : Val.
-  Axiom bool_inj_not_eq : Top <> Btm.
+  Axiom top_neq_btm : Top <> Btm.
   Axiom truth_and_comm : forall v1 v2, truth_and v1 v2 = truth_and v2 v1.
   Axiom truth_or_comm : forall v1 v2, truth_or v1 v2 = truth_or v2 v1.
   Axiom truth_and_assoc : forall v1 v2 v3, truth_and v1 (truth_and v2 v3) = truth_and (truth_and v1 v2) v3.
   Axiom truth_or_assoc : forall v1 v2 v3, truth_or v1 (truth_or v2 v3) = truth_or (truth_or v1 v2) v3.
-  Axiom truth_or_true_iff : forall v1 v2, truth_or v1 v2 = Top <-> v1 = Top \/ v2 = Top.
-  Axiom truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top <-> v1 = Top /\ v2 = Top.
-  Axiom truth_or_false_iff : forall v1 v2, truth_or v1 v2 = Btm <-> v1 = Btm /\ v2 = Btm.
-  Axiom truth_and_false_iff : forall v1 v2, truth_and v1 v2 = Btm <-> v1 = Btm \/ v2 = Btm.
+  Axiom truth_or_true_iff : forall v1 v2, truth_or v1 v2 = Top -> v1 = Top \/ v2 = Top.
+  Axiom truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top -> v1 = Top /\ v2 = Top.
+  Axiom truth_or_false_iff : forall v1 v2, truth_or v1 v2 = Btm -> v1 = Btm /\ v2 = Btm.
+  Axiom truth_and_false_iff : forall v1 v2, truth_and v1 v2 = Btm -> v1 = Btm \/ v2 = Btm.
   Axiom tautology_1 : truth_not Btm = Top.
   Axiom tautology_2 : truth_not Top = Btm.
   Axiom tautology_3 : forall v, truth_and v v = v.
@@ -46,7 +46,7 @@ Module Three_Val <: SEM_VAL.
   Definition Top := VTrue.
   Definition Btm := VFalse.
 
-  Lemma bool_inj_not_eq: Top <> Btm.
+  Lemma top_neq_btm: Top <> Btm.
   Proof. intro; inversion H. Qed.
 
   Definition truth_and (v1 v2 : Val) :=
@@ -90,16 +90,16 @@ Module Three_Val <: SEM_VAL.
   Lemma truth_or_assoc : forall v1 v2 v3, truth_or v1 (truth_or v2 v3) = truth_or (truth_or v1 v2) v3.
   Proof. intros; destruct v1, v2, v3; simpl; trivial. Qed.
 
-  Lemma truth_or_true_iff : forall v1 v2, truth_or v1 v2 = Top <-> v1 = Top \/ v2 = Top.
+  Lemma truth_or_true_iff : forall v1 v2, truth_or v1 v2 = Top -> v1 = Top \/ v2 = Top.
   Proof. intros; destruct v1, v2; simpl; intuition; inversion H0. Qed.
 
-  Lemma truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top <-> v1 = Top /\ v2 = Top.
+  Lemma truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top -> v1 = Top /\ v2 = Top.
   Proof. intros; destruct v1, v2; simpl; intuition; inversion H. Qed.
 
-  Lemma truth_or_false_iff : forall v1 v2, truth_or v1 v2 = Btm <-> v1 = Btm /\ v2 = Btm.
+  Lemma truth_or_false_iff : forall v1 v2, truth_or v1 v2 = Btm -> v1 = Btm /\ v2 = Btm.
   Proof. intros; destruct v1, v2; simpl; intuition; inversion H. Qed.
 
-  Lemma truth_and_false_iff : forall v1 v2, truth_and v1 v2 = Btm <-> v1 = Btm \/ v2 = Btm.
+  Lemma truth_and_false_iff : forall v1 v2, truth_and v1 v2 = Btm -> v1 = Btm \/ v2 = Btm.
   Proof. intros; destruct v1, v2; simpl; intuition; inversion H0. Qed.
 
   Lemma tautology_1 : truth_not Btm = Top. Proof. intuition. Qed.
@@ -111,18 +111,49 @@ Module Three_Val <: SEM_VAL.
 
 End Three_Val.
 
-Module Bool_Val <: SEM_VAL.
-  Definition Val := bool.
-  Definition truth_and := andb.
-  Definition truth_or := orb.
-  Definition truth_not := negb.
-  Definition Top := true.
-  Definition Btm := false.
+Module Three_Val_NoneError <: SEM_VAL.
+
+  Inductive Val_Impl := VTrue | VFalse | VError.
+  Definition Val := Val_Impl.
+
   Definition val_eq_dec : forall v1 v2 : Val, {v1 = v2} + {v1 <> v2}.
     intros; destruct v1, v2; intuition; right; intro; inversion H.
   Defined.
 
-  Lemma bool_inj_not_eq: Top <> Btm. Proof. intro; inversion H. Qed.
+  Definition Top := VTrue.
+  Definition Btm := VFalse.
+
+  Lemma top_neq_btm: Top <> Btm.
+  Proof. intro; inversion H. Qed.
+
+  Definition truth_not v :=
+    match v with
+      | VTrue  => VFalse
+      | VError => VError
+      | VFalse => VTrue
+    end.
+
+  Definition truth_and (v1 v2 : Val) :=
+    match v1, v2 with
+      | VTrue  , VTrue  => VTrue
+      | VTrue  , VError => VError
+      | VTrue  , VFalse => VFalse
+      | VError , _      => VError
+      | VFalse , VError => VError
+      | VFalse , VFalse => VFalse
+      | VFalse , VTrue  => VFalse
+    end.
+
+  Definition truth_or (v1 v2 : Val) :=
+    match v1, v2 with
+      | VTrue  , VFalse => VTrue
+      | VTrue  , VTrue  => VTrue
+      | VTrue  , VError => VError
+      | VError , _      => VError
+      | VFalse , VTrue  => VTrue
+      | VFalse , VError => VError
+      | VFalse , VFalse => VFalse
+    end.
 
   Lemma truth_and_comm : forall v1 v2, truth_and v1 v2 = truth_and v2 v1.
   Proof. intros; destruct v1, v2; simpl; trivial. Qed.
@@ -136,17 +167,62 @@ Module Bool_Val <: SEM_VAL.
   Lemma truth_or_assoc : forall v1 v2 v3, truth_or v1 (truth_or v2 v3) = truth_or (truth_or v1 v2) v3.
   Proof. intros; destruct v1, v2, v3; simpl; trivial. Qed.
 
-  Lemma truth_or_true_iff : forall v1 v2, truth_or v1 v2 = Top <-> v1 = Top \/ v2 = Top.
-  Proof. intros; simpl; apply orb_true_iff. Qed.
+  Lemma truth_or_true_iff : forall v1 v2, truth_or v1 v2 = Top -> v1 = Top \/ v2 = Top.
+  Proof. intros; destruct v1, v2; simpl; intuition; inversion H0. Qed.
 
-  Lemma truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top <-> v1 = Top /\ v2 = Top.
-  Proof. intros; simpl; apply andb_true_iff. Qed.
+  Lemma truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top -> v1 = Top /\ v2 = Top.
+  Proof. intros; destruct v1, v2; simpl; intuition; inversion H. Qed.
 
-  Lemma truth_or_false_iff : forall v1 v2, truth_or v1 v2 = Btm <-> v1 = Btm /\ v2 = Btm.
-  Proof. intros; simpl; apply orb_false_iff. Qed.
+  Lemma truth_or_false_iff : forall v1 v2, truth_or v1 v2 = Btm -> v1 = Btm /\ v2 = Btm.
+  Proof. intros; destruct v1, v2; simpl; intuition; inversion H. Qed.
 
-  Lemma truth_and_false_iff : forall v1 v2, truth_and v1 v2 = Btm <-> v1 = Btm \/ v2 = Btm.
-  Proof. intros; simpl; apply andb_false_iff. Qed.
+  Lemma truth_and_false_iff : forall v1 v2, truth_and v1 v2 = Btm -> v1 = Btm \/ v2 = Btm.
+  Proof. intros; destruct v1, v2; simpl; intuition; inversion H0. Qed.
+
+  Lemma tautology_1 : truth_not Btm = Top. Proof. intuition. Qed.
+  Lemma tautology_2 : truth_not Top = Btm. Proof. intuition. Qed.
+  Lemma tautology_3 : forall v, truth_and v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
+  Lemma tautology_4 : truth_and Top Btm = Btm. Proof. intuition. Qed.
+  Lemma tautology_5 : forall v, truth_or v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
+  Lemma tautology_6 : truth_or Top Btm = Top. Proof. intuition. Qed.
+End Three_Val_NoneError.
+
+Module Bool_Val <: SEM_VAL.
+  Definition Val := bool.
+  Definition truth_and := andb.
+  Definition truth_or := orb.
+  Definition truth_not := negb.
+  Definition Top := true.
+  Definition Btm := false.
+  Definition val_eq_dec : forall v1 v2 : Val, {v1 = v2} + {v1 <> v2}.
+    intros; destruct v1, v2; intuition; right; intro; inversion H.
+  Defined.
+
+  Lemma top_neq_btm: Top <> Btm. Proof. intro; inversion H. Qed.
+
+  Lemma truth_and_comm : forall v1 v2, truth_and v1 v2 = truth_and v2 v1.
+  Proof. intros; destruct v1, v2; simpl; trivial. Qed.
+
+  Lemma truth_or_comm : forall v1 v2, truth_or v1 v2 = truth_or v2 v1.
+  Proof. intros; destruct v1, v2; simpl; trivial. Qed.
+
+  Lemma truth_and_assoc : forall v1 v2 v3, truth_and v1 (truth_and v2 v3) = truth_and (truth_and v1 v2) v3.
+  Proof. intros; destruct v1, v2, v3; simpl; trivial. Qed.
+
+  Lemma truth_or_assoc : forall v1 v2 v3, truth_or v1 (truth_or v2 v3) = truth_or (truth_or v1 v2) v3.
+  Proof. intros; destruct v1, v2, v3; simpl; trivial. Qed.
+
+  Lemma truth_or_true_iff : forall v1 v2, truth_or v1 v2 = Top -> v1 = Top \/ v2 = Top.
+  Proof. intros; simpl; apply orb_true_iff in H; intuition. Qed.
+
+  Lemma truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top -> v1 = Top /\ v2 = Top.
+  Proof. intros; simpl; apply andb_true_iff in H; intuition. Qed.
+
+  Lemma truth_or_false_iff : forall v1 v2, truth_or v1 v2 = Btm -> v1 = Btm /\ v2 = Btm.
+  Proof. intros; simpl; apply orb_false_iff in H; intuition. Qed.
+
+  Lemma truth_and_false_iff : forall v1 v2, truth_and v1 v2 = Btm -> v1 = Btm \/ v2 = Btm.
+  Proof. intros; simpl; apply andb_false_iff in H; intuition. Qed.
 
   Lemma tautology_1 : truth_not Btm = Top. Proof. intuition. Qed.
   Lemma tautology_2 : truth_not Top = Btm. Proof. intuition. Qed.
@@ -343,43 +419,107 @@ Module Type LEQ_RELATION (NUM : NUMBER) (VAL : SEM_VAL).
   Import NUM.
   Import VAL.
   Parameter num_leq : A -> A -> Val.
+  Axiom num_leq_top: forall x y, num_leq x y = Top -> x = y \/ num_leq y x = Btm.
+  Axiom num_leq_btm:
+    forall x y, num_leq x y = Btm -> num_leq y x = Top \/ (((forall z, num_leq z x = Btm /\ num_leq x z = Btm) \/
+                                                            (forall z, num_leq z y = Btm /\ num_leq y z = Btm)) /\
+                                                           (forall m n, num_leq m n = Top \/ num_leq m n = Btm)).
+  Axiom num_leq_trans: forall x y z, num_leq x y = Top -> num_leq y z = Top -> num_leq x z = Top.
+  Axiom num_leq_both_leq: forall x y z, num_leq x z = Top -> num_leq y z = Top -> num_leq x y = Top \/ num_leq x y = Btm.
+  Axiom num_leq_leq_both: forall x y z, num_leq z x = Top -> num_leq z y = Top -> num_leq x y = Top \/ num_leq x y = Btm.
 End LEQ_RELATION.
 
 Module FinLeqRelation (VAL : SEM_VAL) <: LEQ_RELATION ZNumLattice VAL.
   Import ZNumLattice.
   Import VAL.
+
   Definition num_leq (x y : A) := if Z_le_dec x y then Top else Btm.
+
+  Lemma num_leq_top: forall x y, num_leq x y = Top -> x = y \/ num_leq y x = Btm.
+  Proof.
+    intros; unfold num_leq in H; destruct (Z_le_dec x y).
+    apply Zle_lt_or_eq in l; destruct l. right. unfold num_leq. destruct (Z_le_dec y x). omega. trivial.
+    left; trivial.
+    generalize top_neq_btm; intro; rewrite H in H0; exfalso; apply H0; trivial.
+  Qed.
+
+  Lemma num_leq_btm:
+    forall x y, num_leq x y = Btm -> num_leq y x = Top \/ (((forall z, num_leq z x = Btm /\ num_leq x z = Btm) \/
+                                                            (forall z, num_leq z y = Btm /\ num_leq y z = Btm)) /\
+                                                           (forall m n, num_leq m n = Top \/ num_leq m n = Btm)).
+  Proof. left;
+    intros; unfold num_leq in H; destruct (Z_le_dec x y).
+         generalize top_neq_btm; intro; rewrite H in H0; exfalso; intuition.
+         unfold num_leq. destruct (Z_le_dec y x). trivial. omega.
+  Qed.
+
+  Ltac solve_num_leq_trans_fin :=
+    repeat match goal with
+             | [|- forall _, _] => intros
+             | [|- context[num_leq _ _]] => unfold num_leq
+             | [H: context[num_leq _ _] |- _] => unfold num_leq in H
+             | [|- context[Z_le_dec ?z1 ?z0]] => destruct (Z_le_dec z1 z0)
+             | [H: context[Z_le_dec ?z1 ?z0] |- _] => destruct (Z_le_dec z1 z0)
+             | [|- ?A = ?A] => trivial
+             | [H: ?A |- ?A] => apply H
+             | [|- ?A = ?A \/ _] => left; trivial
+             | [|- _ \/ ?A = ?A ] => right; trivial
+           end.
+
+  Lemma num_leq_trans: forall x y z, num_leq x y = Top -> num_leq y z = Top -> num_leq x z = Top.
+  Proof. solve_num_leq_trans_fin. exfalso; intuition. Qed.
+
+  Lemma num_leq_both_leq: forall x y z, num_leq x z = Top -> num_leq y z = Top -> num_leq x y = Top \/ num_leq x y = Btm.
+  Proof. solve_num_leq_trans_fin. Qed.
+
+  Lemma num_leq_leq_both: forall x y z, num_leq z x = Top -> num_leq z y = Top -> num_leq x y = Top \/ num_leq x y = Btm.
+  Proof. solve_num_leq_trans_fin. Qed.
+
 End FinLeqRelation.
 
 Module Type NONE_RELATION (VAL : SEM_VAL).
   Import VAL.
   Parameter noneVal : Val.
+  Axiom none_neq_top : noneVal <> Top.
   Axiom none_tautology_1 : truth_and noneVal (truth_not noneVal) = noneVal.
   Axiom none_tautology_2 : truth_and noneVal Top = noneVal.
-  Axiom none_tautology_3 : truth_and noneVal Btm = Btm.
+  Axiom none_tautology_3 : truth_or (truth_and noneVal Btm) noneVal = noneVal.
   Axiom none_tautology_4 : truth_or noneVal Btm = noneVal.
 End NONE_RELATION.
+
+Module Type NoneError3ValRel <: NONE_RELATION Three_Val_NoneError.
+  Import Three_Val_NoneError.
+  Definition noneVal := VError.
+  Lemma none_neq_top: noneVal <> Top. Proof. intro; discriminate H. Qed.
+  Lemma none_tautology_1 : truth_and noneVal (truth_not noneVal) = noneVal. Proof. intuition. Qed.
+  Lemma none_tautology_2 : truth_and noneVal Top = noneVal. Proof. intuition. Qed.
+  Lemma none_tautology_3 : truth_or (truth_and noneVal Btm) noneVal = noneVal. Proof. intuition. Qed.
+  Lemma none_tautology_4 : truth_or noneVal Btm = noneVal. Proof. intuition. Qed.
+End NoneError3ValRel.
 
 Module None3ValRel <: NONE_RELATION Three_Val.
   Import Three_Val.
   Definition noneVal := VUnknown.
+  Lemma none_neq_top: noneVal <> Top. Proof. intro; discriminate H. Qed.
   Lemma none_tautology_1 : truth_and noneVal (truth_not noneVal) = noneVal. Proof. intuition. Qed.
   Lemma none_tautology_2 : truth_and noneVal Top = noneVal. Proof. intuition. Qed.
-  Lemma none_tautology_3 : truth_and noneVal Btm = Btm. Proof. intuition. Qed.
+  Lemma none_tautology_3 : truth_or (truth_and noneVal Btm) noneVal = noneVal. Proof. intuition. Qed.
   Lemma none_tautology_4 : truth_or noneVal Btm = noneVal. Proof. intuition. Qed.
 End None3ValRel.
 
 Module NoneAlwaysFalse (VAL : SEM_VAL) <: NONE_RELATION VAL.
   Import VAL.
   Definition noneVal := Btm.
+  Lemma none_neq_top: noneVal <> Top.
+  Proof. intro; compute in H; generalize top_neq_btm; intro; rewrite H in H0; apply H0; trivial. Qed.
   Lemma none_tautology_1 : truth_and noneVal (truth_not noneVal) = noneVal.
   Proof. unfold noneVal; simpl; rewrite tautology_1, truth_and_comm, tautology_4; trivial. Qed.
 
   Lemma none_tautology_2 : truth_and noneVal Top = noneVal.
   Proof. unfold noneVal; simpl; rewrite truth_and_comm, tautology_4; trivial. Qed.
 
-  Lemma none_tautology_3 : truth_and noneVal Btm = Btm.
-  Proof. unfold noneVal; simpl; rewrite tautology_3; trivial. Qed.
+  Lemma none_tautology_3 : truth_or (truth_and noneVal Btm) noneVal = noneVal.
+  Proof. unfold noneVal; simpl; rewrite tautology_3, tautology_5; trivial. Qed.
 
   Lemma none_tautology_4 : truth_or noneVal Btm = noneVal.
   Proof. unfold noneVal; simpl; rewrite tautology_5; trivial. Qed.
@@ -401,6 +541,104 @@ Module InfLeqRelation (VAL : SEM_VAL) (S: NONE_RELATION VAL) <: LEQ_RELATION ZIn
       | Some x, Some ZE_NegInf             => if ZE_eq_dec x ZE_NegInf then Top else Btm
       | Some (ZE_Fin z1), Some (ZE_Fin z2) => if Z_le_dec z1 z2 then Top else Btm
     end.
+
+  Ltac solve_num_leq_top :=
+    repeat match goal with
+             | [|- forall _, _] => intros
+             | [x : A |- _] => destruct x
+             | [x : ZE |- _] => destruct x
+             | [H : context[num_leq (Some _) (Some _)] |- _] => simpl in H
+             | [H : context[num_leq (Some _) None] |- _] => simpl in H
+             | [H : context[num_leq None (Some _)] |- _] => simpl in H
+             | [H : context[num_leq None None] |- _] => simpl in H
+             | [|- context[num_leq (Some _) (Some _)]] => simpl
+             | [|- context[num_leq (Some _) None]] => simpl
+             | [|- context[num_leq None (Some _)]] => simpl
+             | [|- context[num_leq None None]] => simpl
+             | [H : noneVal = Top |- _] =>
+               let H0 := fresh "H0" in generalize none_neq_top; intro H0; rewrite H in H0; exfalso; intuition
+             | [H : context[Z_le_dec ?z0 ?z] |- _] => destruct (Z_le_dec z0 z)
+             | [H : Btm = Top |- _] =>
+               let H0 := fresh "H0" in generalize top_neq_btm; intro H0; rewrite H in H0; exfalso; intuition
+             | [|- _ \/ ?A = ?A] => right; trivial
+             | [|- ?A = ?A \/ _] => left; trivial
+           end.
+
+  Lemma num_leq_top: forall x y, num_leq x y = Top -> x = y \/ num_leq y x = Btm.
+  Proof.
+    solve_num_leq_top.
+    apply Zle_lt_or_eq in l; destruct l; [right; destruct (Z_le_dec z z0); [omega | trivial] | left; rewrite H0; trivial].
+  Qed.
+
+  Ltac solve_num_leq_val:=
+    repeat match goal with
+             | [|- forall _, _] => intros
+             | [x : A |- _] => destruct x
+             | [x : ZE |-_] => destruct x
+             | [|- context[num_leq _ _]] => simpl
+             | [H: context[num_leq _ _] |- _] => simpl in H
+             | [|- ?A = ?A \/ _] => left; trivial
+             | [|- _ \/ ?A = ?A \/ _] => right; left; trivial
+             | [|- _ \/ _ \/ ?A = ?A] => right; right; trivial
+           end.
+
+  Lemma num_leq_val: forall x y, num_leq x y = Top \/ num_leq x y = Btm \/ num_leq x y = noneVal.
+  Proof. solve_num_leq_val; destruct (Z_le_dec z0 z); [left | right; left]; trivial. Qed.
+
+  Ltac solve_num_leq_btm :=
+    repeat match goal with
+             | [|- forall _, _] => intros
+             | [x : A |- _] => destruct x
+             | [x : ZE |-_] => destruct x
+             | [H: Top = Btm |- _] => exfalso; apply top_neq_btm; apply H
+             | [|- ?A = ?A \/ _] => left; trivial
+             | [|- num_leq _ _ = _ \/ _ ] => simpl
+             | [H: num_leq _ _ = _ |- _] => simpl in H
+             | [H : noneVal = Btm |- noneVal = Top \/ _] => right
+             | [H: noneVal = Btm |- (forall _, num_leq _ None = Btm /\ noneVal = Btm) \/ _] => left; split; auto
+             | [H: noneVal = Btm |- _ \/ (forall _, num_leq _ None = Btm /\ noneVal = Btm)] => right; split; auto
+             | [|- num_leq _ _ = _] => simpl
+             | [H: ?A |- ?A] => apply H
+             | [H: context[Z_le_dec ?x ?y] |- _] => destruct (Z_le_dec x y)
+             | [|- context[Z_le_dec ?x ?y]] => destruct (Z_le_dec x y)
+             | [|- _ /\ _] => split
+             | [|- _ \/ ?A = ?A] => right; trivial
+           end.
+
+  Lemma num_leq_btm:
+    forall x y, num_leq x y = Btm -> num_leq y x = Top \/ (((forall z, num_leq z x = Btm /\ num_leq x z = Btm) \/
+                                                            (forall z, num_leq z y = Btm /\ num_leq y z = Btm)) /\
+                                                           (forall m n, num_leq m n = Top \/ num_leq m n = Btm)).
+  Proof. solve_num_leq_btm. exfalso; intuition. Qed.
+
+  Ltac solve_num_leq_trans :=
+    repeat match goal with
+             | [|- forall _, _] => intros
+             | [x : A |- _] => destruct x
+             | [x : ZE |- _] => destruct x
+             | [|- context[num_leq _ _]] => simpl
+             | [H: context[num_leq _ _] |- _] => simpl in H
+             | [H: ?A |- ?A] => apply H
+             | [H: ?A = ?B |- ?B = ?A] => rewrite H; trivial
+             | [|- ?A = ?A] => trivial
+             | [H: noneVal = Top |- _] =>
+               let S := fresh "S" in generalize none_neq_top; intro S; exfalso; rewrite H in S; apply S; trivial
+             | [H: Btm = Top |- _] => exfalso; apply top_neq_btm
+             | [|- context[Z_le_dec ?z1 ?z0]] => destruct (Z_le_dec z1 z0)
+             | [H: context[Z_le_dec ?z1 ?z0] |- _] => destruct (Z_le_dec z1 z0)
+             | [|- ?A = ?A \/ _] => left; trivial
+             | [|- _ \/ ?A = ?A ] => right; trivial
+           end.
+
+  Lemma num_leq_trans: forall x y z, num_leq x y = Top -> num_leq y z = Top -> num_leq x z = Top.
+  Proof. solve_num_leq_trans. exfalso; intuition. Qed.
+
+  Lemma num_leq_both_leq: forall x y z, num_leq x z = Top -> num_leq y z = Top -> num_leq x y = Top \/ num_leq x y = Btm.
+  Proof. solve_num_leq_trans. Qed.
+
+  Lemma num_leq_leq_both: forall x y z, num_leq z x = Top -> num_leq z y = Top -> num_leq x y = Top \/ num_leq x y = Btm.
+  Proof. solve_num_leq_trans. Qed.
+
 End InfLeqRelation.
 
 (* Intermediate Modules *)
@@ -901,7 +1139,7 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
       induction n; intros.
       exfalso; destruct zf; simpl in H; intuition.
       destruct zf; rewrite satisfied_unfold, dissatisfied_unfold; intro SS; destruct SS; simpl in H.
-      generalize bool_inj_not_eq; intro S; rewrite <- H0, <- H1 in S; apply S; trivial.
+      generalize top_neq_btm; intro S; rewrite <- H0, <- H1 in S; apply S; trivial.
       destruct H0; destruct H1; [apply (IHn zf1) | apply (IHn zf2)]; intuition.
       destruct H1; destruct H0; [apply (IHn zf1) | apply (IHn zf2)]; intuition.
       rewrite <- dissatisfied_unfold in H0; rewrite dissatisfied_unfold in H1.
@@ -968,16 +1206,89 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
         | _ => ZF_BF bf
       end.
 
+    Lemma num_leq_refl: forall x y, num_leq x y = Top -> num_leq y x = Top -> x = y.
+    Proof.
+      intros; generalize (num_leq_top _ _ H); intro; generalize (num_leq_top _ _ H0); intro;
+      destruct H1, H2; trivial; rewrite H0 in H1; apply top_neq_btm in H1; intuition.
+    Qed.
+
+    Lemma num_leq_btm_trans: forall x y z, num_leq x y = Btm -> num_leq y z = Btm -> num_leq x z = Btm \/ num_leq x z = Top.
+    Proof.
+      intros; destruct (num_leq_btm _ _ H), (num_leq_btm _ _ H0).
+      generalize (num_leq_trans _ _ _ H2 H1); intro.
+      destruct (num_leq_top _ _ H3). rewrite H4 in *. rewrite H1 in H0. exfalso; apply top_neq_btm; apply H0. left; auto.
+      destruct H2 as [[? | ?] ?]. destruct (H2 x). rewrite H1 in H5; exfalso; apply top_neq_btm; apply H5.
+      destruct (H2 x); left; auto.
+      destruct H1 as [[? | ?] ?]. destruct (H1 z); left; auto.
+      destruct (H1 z). rewrite H2 in H4; exfalso; apply top_neq_btm; apply H4.
+      destruct H1 as [? ?].
+      destruct (H3 x z); auto.
+    Qed.
+
+    Ltac solve_eliminate :=
+      repeat match goal with
+               | [|- forall _, _] => intros
+               | [z: ZBF |- _] => destruct z
+               | [|- context[satisfied _]] => rewrite satisfied_unfold; simpl
+               | [|- context[dissatisfied _]] => rewrite dissatisfied_unfold; simpl
+               | [|- _ /\ _] => split
+               | [|- _ <-> _] => split
+               | [|- _ -> _] => intros
+               | [|- context [eliminateMinMax _]] => simpl
+               | [H: ?A |- ?A] => apply H
+               | [H: truth_or _ _ = Top |- _] => apply truth_or_true_iff in H
+               | [H: truth_or _ _ = Btm |- _] => apply truth_or_false_iff in H
+               | [H: _ \/ _ |- _] => destruct H
+               | [H: truth_and _ _ = Top |- _] => apply truth_and_true_iff in H
+               | [H: truth_and _ _ = Btm |- _] => apply truth_and_false_iff in H
+               | [H: _ /\ _ |- _] => destruct H
+               | [H: ?A = _ |- context[?A]] => rewrite H
+               | [|- context[truth_and ?A ?A]] => rewrite tautology_3
+               | [|- ?A = ?A /\ ?B = ?B \/ _] => left; intuition
+               | [|- _ \/ ?A = ?A /\ ?B = ?B] => right; intuition
+               | [H1 : num_leq ?A ?A = Top, H2 : num_leq ?A ?A = Top |- _] => clear H1
+               | [H1 : num_leq ?A ?B = Top, H2 : num_leq ?B ?A = Top |- _] =>
+                 let H := fresh "H" in
+                 generalize (num_leq_refl _ _ H1 H2); intro H; rewrite H in *; clear H H1
+               | [|- context[truth_and ?v (truth_and ?v _)]] => rewrite truth_and_assoc, tautology_3
+               | [H : num_leq ?A ?B = Top |- context[num_leq ?B ?A]] => destruct (num_leq_top _ _ H)
+               | [|- context[truth_or ?A ?A]] => rewrite tautology_5
+               | [|- ?A = ?A] => trivial
+               | [|- context[truth_and Btm Top]] => rewrite (truth_and_comm Btm Top), tautology_4
+               | [|- context[truth_and Top Btm]] => rewrite tautology_4
+               | [|- context[truth_or Top Btm]] => rewrite tautology_6
+               | [|- context[truth_or Btm Top]] => rewrite (truth_or_comm Btm Top), tautology_6
+               | [|- _ \/ ?A = ?A] => right; trivial
+               | [H : num_leq ?A ?B = Btm |- context[num_leq ?B ?A]] => destruct (num_leq_btm _ _ H); clear H
+               | [|- ?A = ?A \/ _] => left; trivial
+               | [H : forall _, num_leq _ ?A = Btm /\ num_leq ?A _ = Btm |- context[num_leq ?B ?A]] =>
+                 let H1 := fresh "H1" in let H2 := fresh "H2" in destruct (H B) as [H1 H2]; rewrite H1
+               | [H : forall _, num_leq _ ?A = Btm /\ num_leq ?A _ = Btm |- context[num_leq ?A ?B]] =>
+                 let H1 := fresh "H1" in let H2 := fresh "H2" in destruct (H B) as [H1 H2]; rewrite H2
+               | [H : forall _, num_leq _ ?A = Btm /\ num_leq ?A _ = Btm, T: num_leq ?B ?A = Top |- _] =>
+                 let H1 := fresh "H1" in let H2 := fresh "H2" in destruct (H B) as [H1 H2]; rewrite T in H1;
+                                                                 exfalso; apply top_neq_btm; apply H1
+               | [H : forall _, num_leq _ ?A = Btm /\ num_leq ?A _ = Btm, T: num_leq ?A ?B = Top |- _] =>
+                 let H1 := fresh "H1" in let H2 := fresh "H2" in destruct (H B) as [H1 H2]; rewrite T in H2;
+                                                                 exfalso; apply top_neq_btm; apply H2
+               | [H1 : num_leq ?x ?z = Top, H2: num_leq ?y ?z = Top |- context[num_leq ?x ?y]] =>
+                 destruct (num_leq_both_leq x y z H1 H2)
+               | [H1 : ?A = ?B, H2: context[?A] |- _] => rewrite H1 in H2
+               | [H : forall m n : A, num_leq m n = Top \/ num_leq m n = Btm |- context[num_leq ?A ?B]] => destruct (H A B)
+               | [H1 : num_leq ?x ?y = Top, H2: num_leq ?y ?z = Top |- context[num_leq ?x ?z]] =>
+                 let H := fresh "H" in generalize (num_leq_trans _ _ _ H1 H2); intro H; rewrite H
+               | [H1 : num_leq ?z ?x = Top, H2: num_leq ?z ?y = Top |- context[num_leq ?x ?y]] =>
+                 destruct (num_leq_leq_both x y z H1 H2)
+               | [H1 : num_leq ?x ?y = Btm, H2: num_leq ?y ?z = Btm |- context[num_leq ?x ?z]] =>
+                 let H := fresh "H" in destruct (num_leq_btm_trans _ _ _ H1 H2) as [H | H]; rewrite H
+               | [H1: num_leq ?x ?y = Btm, H2: num_leq ?y ?x = Btm |- _] => destruct (num_leq_btm _ _ H1)
+               | [H: Btm = Top |- _] => exfalso; apply top_neq_btm
+             end.
+
     (* Elimination of min and max doesn't change the validity of boolean forms *)
     Lemma eliminate_ok: forall z, (satisfied (ZF_BF z) <-> satisfied (eliminateMinMax z)) /\
                                   (dissatisfied (ZF_BF z) <-> dissatisfied (eliminateMinMax z)).
-    Proof.
-      split.
-      destruct z; simpl; try tauto; repeat rewrite satisfied_unfold;
-      simpl; rewrite truth_or_true_iff; repeat rewrite truth_and_true_iff; tauto.
-      destruct z; simpl; try tauto; repeat rewrite dissatisfied_unfold;
-      simpl; rewrite truth_or_false_iff; repeat rewrite truth_and_false_iff; tauto.
-    Qed.
+    Proof. solve_eliminate. Qed.
 
     Inductive SimpResult (f : ZF) :=
     | EQ_Top : f = ZF_BF (ZBF_Const Top) -> SimpResult f
