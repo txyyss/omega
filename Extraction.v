@@ -24,7 +24,7 @@ Module InfSolverExtract (sv: STRVAR).
 (* Module Three_Val_False := NoneAlwaysFalse Three_Val. *)
 (* Module IS := InfSolver sv Three_Val Three_Val_False. (* Use Three Value Logic and None is False *) *)
  
- Module IS := InfSolver sv Three_Val None3ValRel FinZero InfZeroAll. (* Use Three Value Logic and None is Unknown *)
+ Module IS := InfSolver sv Three_Val None3ValRel FinZero InfZeroAll. (* Use Three Value Logic, None is Unknown and Inf*0 is 0 *)
 
 (* Extraction Algorithms *)
 Open Scope Z_scope.
