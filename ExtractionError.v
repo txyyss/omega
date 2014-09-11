@@ -30,8 +30,6 @@ Module InfSolverExtract (sv: STRVAR).
 
  Module SIM := ThreeValuedSimp sv FinZero InfZeroAll.
 
- Module IS := SIM.InfS.
-
 (* Extraction Algorithms *)
 Open Scope Z_scope.
 
@@ -143,90 +141,90 @@ Inductive ZE : Type :=
   | ZE_Inf : ZE
   | ZE_NegInf : ZE.
 
-Fixpoint convert_ZF_to_IAZF_Exp (exp: ZExp ZE) : IS.IA.ZExp :=
+Fixpoint convert_ZF_to_IAZF_Exp (exp: ZExp ZE) : SIM.InfS.IA.ZExp :=
 match exp with
-  | ZExp_Var v => IS.IA.ZExp_Var v
+  | ZExp_Var v => SIM.InfS.IA.ZExp_Var v
   | ZExp_Const c => match c with
-                      | ZE_NegInf => IS.IA.ZExp_Const (Some(PureInfinity.N.ZE_NegInf))
-                      | ZE_Inf => IS.IA.ZExp_Const (Some(PureInfinity.N.ZE_Inf))
-                      | ZE_Fin v => IS.IA.ZExp_Const (Some(PureInfinity.N.ZE_Fin (Z_of_string (sv.var2string v))))
+                      | ZE_NegInf => SIM.InfS.IA.ZExp_Const (Some(PureInfinity.N.ZE_NegInf))
+                      | ZE_Inf => SIM.InfS.IA.ZExp_Const (Some(PureInfinity.N.ZE_Inf))
+                      | ZE_Fin v => SIM.InfS.IA.ZExp_Const (Some(PureInfinity.N.ZE_Fin (Z_of_string (sv.var2string v))))
                     end
-  | ZExp_Add e1 e2 => IS.IA.ZExp_Add (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
-  | ZExp_Sub e1 e2 => IS.IA.ZExp_Sub (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
-  | ZExp_Mult s e => IS.IA.ZExp_Mult (Z_of_string (sv.var2string s)) (convert_ZF_to_IAZF_Exp e)
+  | ZExp_Add e1 e2 => SIM.InfS.IA.ZExp_Add (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
+  | ZExp_Sub e1 e2 => SIM.InfS.IA.ZExp_Sub (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
+  | ZExp_Mult s e => SIM.InfS.IA.ZExp_Mult (Z_of_string (sv.var2string s)) (convert_ZF_to_IAZF_Exp e)
 end.
 
-Fixpoint convert_ZF_to_IAZF_BF (bf: ZBF ZE) : IS.IA.ZBF :=
+Fixpoint convert_ZF_to_IAZF_BF (bf: ZBF ZE) : SIM.InfS.IA.ZBF :=
 match bf with
-  | ZBF_Const b => if b then IS.IA.ZBF_Const Three_Val.VTrue else IS.IA.ZBF_Const Three_Val.VFalse
-  | ZBF_Lt e1 e2 => IS.IA.ZBF_Lt (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
-  | ZBF_Lte e1 e2 => IS.IA.ZBF_Lte (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
-  | ZBF_Gt e1 e2 => IS.IA.ZBF_Gt (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
-  | ZBF_Gte e1 e2 => IS.IA.ZBF_Gte (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
-  | ZBF_Eq e1 e2 => IS.IA.ZBF_Eq (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
-  | ZBF_Eq_Max e1 e2 e3 => IS.IA.ZBF_Eq_Max (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2) (convert_ZF_to_IAZF_Exp e3)
-  | ZBF_Eq_Min e1 e2 e3 => IS.IA.ZBF_Eq_Min (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2) (convert_ZF_to_IAZF_Exp e3)
-  | ZBF_Neq e1 e2 => IS.IA.ZBF_Neq (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
+  | ZBF_Const b => if b then SIM.InfS.IA.ZBF_Const Three_Val.VTrue else SIM.InfS.IA.ZBF_Const Three_Val.VFalse
+  | ZBF_Lt e1 e2 => SIM.InfS.IA.ZBF_Lt (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
+  | ZBF_Lte e1 e2 => SIM.InfS.IA.ZBF_Lte (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
+  | ZBF_Gt e1 e2 => SIM.InfS.IA.ZBF_Gt (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
+  | ZBF_Gte e1 e2 => SIM.InfS.IA.ZBF_Gte (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
+  | ZBF_Eq e1 e2 => SIM.InfS.IA.ZBF_Eq (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
+  | ZBF_Eq_Max e1 e2 e3 => SIM.InfS.IA.ZBF_Eq_Max (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2) (convert_ZF_to_IAZF_Exp e3)
+  | ZBF_Eq_Min e1 e2 e3 => SIM.InfS.IA.ZBF_Eq_Min (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2) (convert_ZF_to_IAZF_Exp e3)
+  | ZBF_Neq e1 e2 => SIM.InfS.IA.ZBF_Neq (convert_ZF_to_IAZF_Exp e1) (convert_ZF_to_IAZF_Exp e2)
 end.
 
-Fixpoint convert_ZF_to_IAZF (f: ZF ZE) : IS.IA.ZF :=
+Fixpoint convert_ZF_to_IAZF (f: ZF ZE) : SIM.InfS.IA.ZF :=
 match f with
-  | ZF_BF bf => IS.IA.ZF_BF (convert_ZF_to_IAZF_BF bf)
-  | ZF_And f1 f2 => IS.IA.ZF_And (convert_ZF_to_IAZF f1) (convert_ZF_to_IAZF f2)
-  | ZF_Or f1 f2 => IS.IA.ZF_Or (convert_ZF_to_IAZF f1) (convert_ZF_to_IAZF f2)
-  | ZF_Not g => IS.IA.ZF_Not (convert_ZF_to_IAZF g)
-  | ZF_Forall_Fin v g => IS.IA.ZF_Forall v PureInfinity.Q_Z (convert_ZF_to_IAZF g)
-  | ZF_Exists_Fin v g => IS.IA.ZF_Exists v PureInfinity.Q_Z (convert_ZF_to_IAZF g)
-  | ZF_Forall v g => IS.IA.ZF_Forall v PureInfinity.Q_ZE (convert_ZF_to_IAZF g)
-  | ZF_Exists v g => IS.IA.ZF_Exists v PureInfinity.Q_ZE (convert_ZF_to_IAZF g)
+  | ZF_BF bf => SIM.InfS.IA.ZF_BF (convert_ZF_to_IAZF_BF bf)
+  | ZF_And f1 f2 => SIM.InfS.IA.ZF_And (convert_ZF_to_IAZF f1) (convert_ZF_to_IAZF f2)
+  | ZF_Or f1 f2 => SIM.InfS.IA.ZF_Or (convert_ZF_to_IAZF f1) (convert_ZF_to_IAZF f2)
+  | ZF_Not g => SIM.InfS.IA.ZF_Not (convert_ZF_to_IAZF g)
+  | ZF_Forall_Fin v g => SIM.InfS.IA.ZF_Forall v PureInfinity.Q_Z (convert_ZF_to_IAZF g)
+  | ZF_Exists_Fin v g => SIM.InfS.IA.ZF_Exists v PureInfinity.Q_Z (convert_ZF_to_IAZF g)
+  | ZF_Forall v g => SIM.InfS.IA.ZF_Forall v PureInfinity.Q_ZE (convert_ZF_to_IAZF g)
+  | ZF_Exists v g => SIM.InfS.IA.ZF_Exists v PureInfinity.Q_ZE (convert_ZF_to_IAZF g)
 end.
 
-Fixpoint convert_FAZF_to_ZF_Exp (exp: IS.FA.ZExp) :ZExp sv.var :=
+Fixpoint convert_FAZF_to_ZF_Exp (exp: SIM.InfS.FA.ZExp) :ZExp sv.var :=
 match exp with
-  | IS.FA.ZExp_Var v => ZExp_Var sv.var v
-  | IS.FA.ZExp_Const c => ZExp_Const sv.var (sv.string2var (string_of_Z c))
-  | IS.FA.ZExp_Add e1 e2 => ZExp_Add sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
-  | IS.FA.ZExp_Sub e1 e2 => ZExp_Sub sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
-  | IS.FA.ZExp_Inv e => ZExp_Sub sv.var (ZExp_Const sv.var (sv.string2var (string_of_Z 0))) (convert_FAZF_to_ZF_Exp e)
-  | IS.FA.ZExp_Mult c e => ZExp_Mult sv.var (sv.string2var (string_of_Z c)) (convert_FAZF_to_ZF_Exp e)
+  | SIM.InfS.FA.ZExp_Var v => ZExp_Var sv.var v
+  | SIM.InfS.FA.ZExp_Const c => ZExp_Const sv.var (sv.string2var (string_of_Z c))
+  | SIM.InfS.FA.ZExp_Add e1 e2 => ZExp_Add sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
+  | SIM.InfS.FA.ZExp_Sub e1 e2 => ZExp_Sub sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
+  | SIM.InfS.FA.ZExp_Inv e => ZExp_Sub sv.var (ZExp_Const sv.var (sv.string2var (string_of_Z 0))) (convert_FAZF_to_ZF_Exp e)
+  | SIM.InfS.FA.ZExp_Mult c e => ZExp_Mult sv.var (sv.string2var (string_of_Z c)) (convert_FAZF_to_ZF_Exp e)
 end.
 
-Fixpoint convert_FAZF_to_ZF_BF (bf: IS.FA.ZBF) :ZBF sv.var :=
+Fixpoint convert_FAZF_to_ZF_BF (bf: SIM.InfS.FA.ZBF) :ZBF sv.var :=
 match bf with
-  | IS.FA.ZBF_Const b => match b with 
+  | SIM.InfS.FA.ZBF_Const b => match b with 
                            | Three_Val.VTrue => ZBF_Const sv.var true
                            | _ => ZBF_Const sv.var false
                          end
-  | IS.FA.ZBF_Lt e1 e2 => ZBF_Lt sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
-  | IS.FA.ZBF_Lte e1 e2 => ZBF_Lte sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
-  | IS.FA.ZBF_Gt e1 e2 => ZBF_Gt sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
-  | IS.FA.ZBF_Gte e1 e2 => ZBF_Gte sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
-  | IS.FA.ZBF_Eq e1 e2 => ZBF_Eq sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
-  | IS.FA.ZBF_Eq_Max e1 e2 e3 => ZBF_Eq_Max sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2) (convert_FAZF_to_ZF_Exp e3)
-  | IS.FA.ZBF_Eq_Min e1 e2 e3 => ZBF_Eq_Min sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2) (convert_FAZF_to_ZF_Exp e3)
-  | IS.FA.ZBF_Neq e1 e2 => ZBF_Neq sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
+  | SIM.InfS.FA.ZBF_Lt e1 e2 => ZBF_Lt sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
+  | SIM.InfS.FA.ZBF_Lte e1 e2 => ZBF_Lte sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
+  | SIM.InfS.FA.ZBF_Gt e1 e2 => ZBF_Gt sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
+  | SIM.InfS.FA.ZBF_Gte e1 e2 => ZBF_Gte sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
+  | SIM.InfS.FA.ZBF_Eq e1 e2 => ZBF_Eq sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
+  | SIM.InfS.FA.ZBF_Eq_Max e1 e2 e3 => ZBF_Eq_Max sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2) (convert_FAZF_to_ZF_Exp e3)
+  | SIM.InfS.FA.ZBF_Eq_Min e1 e2 e3 => ZBF_Eq_Min sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2) (convert_FAZF_to_ZF_Exp e3)
+  | SIM.InfS.FA.ZBF_Neq e1 e2 => ZBF_Neq sv.var (convert_FAZF_to_ZF_Exp e1) (convert_FAZF_to_ZF_Exp e2)
 end.
 
-Fixpoint convert_FAZF_to_ZF (f: IS.FA.ZF) : ZF sv.var :=
+Fixpoint convert_FAZF_to_ZF (f: SIM.InfS.FA.ZF) : ZF sv.var :=
 match f with
-  | IS.FA.ZF_BF bf => ZF_BF sv.var (convert_FAZF_to_ZF_BF bf)
-  | IS.FA.ZF_And f1 f2 => ZF_And sv.var (convert_FAZF_to_ZF f1) (convert_FAZF_to_ZF f2)
-  | IS.FA.ZF_Or f1 f2 => ZF_Or sv.var (convert_FAZF_to_ZF f1) (convert_FAZF_to_ZF f2)
-  | IS.FA.ZF_Imp f1 f2 => ZF_Or sv.var (ZF_Not sv.var (convert_FAZF_to_ZF f1)) (convert_FAZF_to_ZF f2)
-  | IS.FA.ZF_Not g => ZF_Not sv.var (convert_FAZF_to_ZF g)
-  | IS.FA.ZF_Forall v _ g => ZF_Forall_Fin sv.var v (convert_FAZF_to_ZF g)
-  | IS.FA.ZF_Exists v _ g => ZF_Exists_Fin sv.var v (convert_FAZF_to_ZF g)
+  | SIM.InfS.FA.ZF_BF bf => ZF_BF sv.var (convert_FAZF_to_ZF_BF bf)
+  | SIM.InfS.FA.ZF_And f1 f2 => ZF_And sv.var (convert_FAZF_to_ZF f1) (convert_FAZF_to_ZF f2)
+  | SIM.InfS.FA.ZF_Or f1 f2 => ZF_Or sv.var (convert_FAZF_to_ZF f1) (convert_FAZF_to_ZF f2)
+  | SIM.InfS.FA.ZF_Imp f1 f2 => ZF_Or sv.var (ZF_Not sv.var (convert_FAZF_to_ZF f1)) (convert_FAZF_to_ZF f2)
+  | SIM.InfS.FA.ZF_Not g => ZF_Not sv.var (convert_FAZF_to_ZF g)
+  | SIM.InfS.FA.ZF_Forall v _ g => ZF_Forall_Fin sv.var v (convert_FAZF_to_ZF g)
+  | SIM.InfS.FA.ZF_Exists v _ g => ZF_Exists_Fin sv.var v (convert_FAZF_to_ZF g)
 end.
 
 (* For the actual algorithm we only need string as we don't do any operation
 on Z *)
 Definition transform_ZE_to_string (f:ZF ZE): ZF sv.var :=
-convert_FAZF_to_ZF (IS.T(convert_ZF_to_IAZF f)).
+convert_FAZF_to_ZF (SIM.InfS.T(convert_ZF_to_IAZF f)).
 (*convert_FAZRForm_to_ZF_Z (FA.hi2zrform (T(convert_ZF_to_IAZF(f)))).*)
 (*(convert_ZE_to_string (norm_F (elim_quant f)))*)
 
 Definition transform_ZE_to_string_simplify (f:ZF ZE): ZF sv.var :=
-convert_FAZF_to_ZF (SIM.simplify(IS.T(convert_ZF_to_IAZF f))).
+convert_FAZF_to_ZF (SIM.simplify(SIM.InfS.T(convert_ZF_to_IAZF f))).
 
 End InfSolverExtract.
 

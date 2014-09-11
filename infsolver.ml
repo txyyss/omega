@@ -4254,8 +4254,6 @@ module InfSolverExtract =
   
   module SIM = ThreeValuedSimp(Coq_sv)(FinZero)(InfZeroAll)
   
-  module IS = SIM.InfS
-  
   (** val coq_Z_of_bool : bool -> z **)
   
   let coq_Z_of_bool = function
@@ -4539,136 +4537,148 @@ module InfSolverExtract =
   | ZE_Inf -> f0
   | ZE_NegInf -> f1
   
-  (** val convert_ZF_to_IAZF_Exp : coq_ZE coq_ZExp -> IS.IA.coq_ZExp **)
+  (** val convert_ZF_to_IAZF_Exp :
+      coq_ZE coq_ZExp -> SIM.InfS.IA.coq_ZExp **)
   
   let rec convert_ZF_to_IAZF_Exp = function
-  | ZExp_Var v -> IS.IA.ZExp_Var v
+  | ZExp_Var v -> SIM.InfS.IA.ZExp_Var v
   | ZExp_Const c ->
     (match c with
      | ZE_Fin v ->
-       IS.IA.ZExp_Const (Some (PureInfinity.N.ZE_Fin
+       SIM.InfS.IA.ZExp_Const (Some (PureInfinity.N.ZE_Fin
          (coq_Z_of_string (Coq_sv.var2string v))))
-     | ZE_Inf -> IS.IA.ZExp_Const (Some PureInfinity.N.ZE_Inf)
-     | ZE_NegInf -> IS.IA.ZExp_Const (Some PureInfinity.N.ZE_NegInf))
+     | ZE_Inf -> SIM.InfS.IA.ZExp_Const (Some PureInfinity.N.ZE_Inf)
+     | ZE_NegInf -> SIM.InfS.IA.ZExp_Const (Some PureInfinity.N.ZE_NegInf))
   | ZExp_Add (e1, e2) ->
-    IS.IA.ZExp_Add ((convert_ZF_to_IAZF_Exp e1), (convert_ZF_to_IAZF_Exp e2))
+    SIM.InfS.IA.ZExp_Add ((convert_ZF_to_IAZF_Exp e1),
+      (convert_ZF_to_IAZF_Exp e2))
   | ZExp_Sub (e1, e2) ->
-    IS.IA.ZExp_Sub ((convert_ZF_to_IAZF_Exp e1), (convert_ZF_to_IAZF_Exp e2))
+    SIM.InfS.IA.ZExp_Sub ((convert_ZF_to_IAZF_Exp e1),
+      (convert_ZF_to_IAZF_Exp e2))
   | ZExp_Mult (s, e) ->
-    IS.IA.ZExp_Mult ((coq_Z_of_string (Coq_sv.var2string s)),
+    SIM.InfS.IA.ZExp_Mult ((coq_Z_of_string (Coq_sv.var2string s)),
       (convert_ZF_to_IAZF_Exp e))
   
-  (** val convert_ZF_to_IAZF_BF : coq_ZE coq_ZBF -> IS.IA.coq_ZBF **)
+  (** val convert_ZF_to_IAZF_BF : coq_ZE coq_ZBF -> SIM.InfS.IA.coq_ZBF **)
   
   let rec convert_ZF_to_IAZF_BF = function
   | ZBF_Const b ->
     if b
-    then IS.IA.ZBF_Const (Obj.magic Three_Val.VTrue)
-    else IS.IA.ZBF_Const (Obj.magic Three_Val.VFalse)
+    then SIM.InfS.IA.ZBF_Const (Obj.magic Three_Val.VTrue)
+    else SIM.InfS.IA.ZBF_Const (Obj.magic Three_Val.VFalse)
   | ZBF_Lt (e1, e2) ->
-    IS.IA.ZBF_Lt ((convert_ZF_to_IAZF_Exp e1), (convert_ZF_to_IAZF_Exp e2))
+    SIM.InfS.IA.ZBF_Lt ((convert_ZF_to_IAZF_Exp e1),
+      (convert_ZF_to_IAZF_Exp e2))
   | ZBF_Lte (e1, e2) ->
-    IS.IA.ZBF_Lte ((convert_ZF_to_IAZF_Exp e1), (convert_ZF_to_IAZF_Exp e2))
+    SIM.InfS.IA.ZBF_Lte ((convert_ZF_to_IAZF_Exp e1),
+      (convert_ZF_to_IAZF_Exp e2))
   | ZBF_Gt (e1, e2) ->
-    IS.IA.ZBF_Gt ((convert_ZF_to_IAZF_Exp e1), (convert_ZF_to_IAZF_Exp e2))
+    SIM.InfS.IA.ZBF_Gt ((convert_ZF_to_IAZF_Exp e1),
+      (convert_ZF_to_IAZF_Exp e2))
   | ZBF_Gte (e1, e2) ->
-    IS.IA.ZBF_Gte ((convert_ZF_to_IAZF_Exp e1), (convert_ZF_to_IAZF_Exp e2))
+    SIM.InfS.IA.ZBF_Gte ((convert_ZF_to_IAZF_Exp e1),
+      (convert_ZF_to_IAZF_Exp e2))
   | ZBF_Eq (e1, e2) ->
-    IS.IA.ZBF_Eq ((convert_ZF_to_IAZF_Exp e1), (convert_ZF_to_IAZF_Exp e2))
+    SIM.InfS.IA.ZBF_Eq ((convert_ZF_to_IAZF_Exp e1),
+      (convert_ZF_to_IAZF_Exp e2))
   | ZBF_Eq_Max (e1, e2, e3) ->
-    IS.IA.ZBF_Eq_Max ((convert_ZF_to_IAZF_Exp e1),
+    SIM.InfS.IA.ZBF_Eq_Max ((convert_ZF_to_IAZF_Exp e1),
       (convert_ZF_to_IAZF_Exp e2), (convert_ZF_to_IAZF_Exp e3))
   | ZBF_Eq_Min (e1, e2, e3) ->
-    IS.IA.ZBF_Eq_Min ((convert_ZF_to_IAZF_Exp e1),
+    SIM.InfS.IA.ZBF_Eq_Min ((convert_ZF_to_IAZF_Exp e1),
       (convert_ZF_to_IAZF_Exp e2), (convert_ZF_to_IAZF_Exp e3))
   | ZBF_Neq (e1, e2) ->
-    IS.IA.ZBF_Neq ((convert_ZF_to_IAZF_Exp e1), (convert_ZF_to_IAZF_Exp e2))
+    SIM.InfS.IA.ZBF_Neq ((convert_ZF_to_IAZF_Exp e1),
+      (convert_ZF_to_IAZF_Exp e2))
   
-  (** val convert_ZF_to_IAZF : coq_ZE coq_ZF -> IS.IA.coq_ZF **)
+  (** val convert_ZF_to_IAZF : coq_ZE coq_ZF -> SIM.InfS.IA.coq_ZF **)
   
   let rec convert_ZF_to_IAZF = function
-  | ZF_BF bf -> IS.IA.ZF_BF (convert_ZF_to_IAZF_BF bf)
+  | ZF_BF bf -> SIM.InfS.IA.ZF_BF (convert_ZF_to_IAZF_BF bf)
   | ZF_And (f1, f2) ->
-    IS.IA.ZF_And ((convert_ZF_to_IAZF f1), (convert_ZF_to_IAZF f2))
+    SIM.InfS.IA.ZF_And ((convert_ZF_to_IAZF f1), (convert_ZF_to_IAZF f2))
   | ZF_Or (f1, f2) ->
-    IS.IA.ZF_Or ((convert_ZF_to_IAZF f1), (convert_ZF_to_IAZF f2))
-  | ZF_Not g -> IS.IA.ZF_Not (convert_ZF_to_IAZF g)
+    SIM.InfS.IA.ZF_Or ((convert_ZF_to_IAZF f1), (convert_ZF_to_IAZF f2))
+  | ZF_Not g -> SIM.InfS.IA.ZF_Not (convert_ZF_to_IAZF g)
   | ZF_Forall_Fin (v, g) ->
-    IS.IA.ZF_Forall (v, PureInfinity.Q_Z, (convert_ZF_to_IAZF g))
+    SIM.InfS.IA.ZF_Forall (v, PureInfinity.Q_Z, (convert_ZF_to_IAZF g))
   | ZF_Exists_Fin (v, g) ->
-    IS.IA.ZF_Exists (v, PureInfinity.Q_Z, (convert_ZF_to_IAZF g))
+    SIM.InfS.IA.ZF_Exists (v, PureInfinity.Q_Z, (convert_ZF_to_IAZF g))
   | ZF_Forall (v, g) ->
-    IS.IA.ZF_Forall (v, PureInfinity.Q_ZE, (convert_ZF_to_IAZF g))
+    SIM.InfS.IA.ZF_Forall (v, PureInfinity.Q_ZE, (convert_ZF_to_IAZF g))
   | ZF_Exists (v, g) ->
-    IS.IA.ZF_Exists (v, PureInfinity.Q_ZE, (convert_ZF_to_IAZF g))
+    SIM.InfS.IA.ZF_Exists (v, PureInfinity.Q_ZE, (convert_ZF_to_IAZF g))
   
-  (** val convert_FAZF_to_ZF_Exp : IS.FA.coq_ZExp -> Coq_sv.var coq_ZExp **)
+  (** val convert_FAZF_to_ZF_Exp :
+      SIM.InfS.FA.coq_ZExp -> Coq_sv.var coq_ZExp **)
   
   let rec convert_FAZF_to_ZF_Exp = function
-  | IS.FA.ZExp_Var v -> ZExp_Var v
-  | IS.FA.ZExp_Const c -> ZExp_Const (Coq_sv.string2var (string_of_Z c))
-  | IS.FA.ZExp_Add (e1, e2) ->
+  | SIM.InfS.FA.ZExp_Var v -> ZExp_Var v
+  | SIM.InfS.FA.ZExp_Const c ->
+    ZExp_Const (Coq_sv.string2var (string_of_Z c))
+  | SIM.InfS.FA.ZExp_Add (e1, e2) ->
     ZExp_Add ((convert_FAZF_to_ZF_Exp e1), (convert_FAZF_to_ZF_Exp e2))
-  | IS.FA.ZExp_Inv e ->
+  | SIM.InfS.FA.ZExp_Inv e ->
     ZExp_Sub ((ZExp_Const (Coq_sv.string2var (string_of_Z Z0))),
       (convert_FAZF_to_ZF_Exp e))
-  | IS.FA.ZExp_Sub (e1, e2) ->
+  | SIM.InfS.FA.ZExp_Sub (e1, e2) ->
     ZExp_Sub ((convert_FAZF_to_ZF_Exp e1), (convert_FAZF_to_ZF_Exp e2))
-  | IS.FA.ZExp_Mult (c, e) ->
+  | SIM.InfS.FA.ZExp_Mult (c, e) ->
     ZExp_Mult ((Coq_sv.string2var (string_of_Z c)),
       (convert_FAZF_to_ZF_Exp e))
   
-  (** val convert_FAZF_to_ZF_BF : IS.FA.coq_ZBF -> Coq_sv.var coq_ZBF **)
+  (** val convert_FAZF_to_ZF_BF :
+      SIM.InfS.FA.coq_ZBF -> Coq_sv.var coq_ZBF **)
   
   let rec convert_FAZF_to_ZF_BF = function
-  | IS.FA.ZBF_Const b ->
+  | SIM.InfS.FA.ZBF_Const b ->
     (match b with
      | Three_Val_NoneError.VTrue -> ZBF_Const true
      | _ -> ZBF_Const false)
-  | IS.FA.ZBF_Lt (e1, e2) ->
+  | SIM.InfS.FA.ZBF_Lt (e1, e2) ->
     ZBF_Lt ((convert_FAZF_to_ZF_Exp e1), (convert_FAZF_to_ZF_Exp e2))
-  | IS.FA.ZBF_Lte (e1, e2) ->
+  | SIM.InfS.FA.ZBF_Lte (e1, e2) ->
     ZBF_Lte ((convert_FAZF_to_ZF_Exp e1), (convert_FAZF_to_ZF_Exp e2))
-  | IS.FA.ZBF_Gt (e1, e2) ->
+  | SIM.InfS.FA.ZBF_Gt (e1, e2) ->
     ZBF_Gt ((convert_FAZF_to_ZF_Exp e1), (convert_FAZF_to_ZF_Exp e2))
-  | IS.FA.ZBF_Gte (e1, e2) ->
+  | SIM.InfS.FA.ZBF_Gte (e1, e2) ->
     ZBF_Gte ((convert_FAZF_to_ZF_Exp e1), (convert_FAZF_to_ZF_Exp e2))
-  | IS.FA.ZBF_Eq (e1, e2) ->
+  | SIM.InfS.FA.ZBF_Eq (e1, e2) ->
     ZBF_Eq ((convert_FAZF_to_ZF_Exp e1), (convert_FAZF_to_ZF_Exp e2))
-  | IS.FA.ZBF_Eq_Max (e1, e2, e3) ->
+  | SIM.InfS.FA.ZBF_Eq_Max (e1, e2, e3) ->
     ZBF_Eq_Max ((convert_FAZF_to_ZF_Exp e1), (convert_FAZF_to_ZF_Exp e2),
       (convert_FAZF_to_ZF_Exp e3))
-  | IS.FA.ZBF_Eq_Min (e1, e2, e3) ->
+  | SIM.InfS.FA.ZBF_Eq_Min (e1, e2, e3) ->
     ZBF_Eq_Min ((convert_FAZF_to_ZF_Exp e1), (convert_FAZF_to_ZF_Exp e2),
       (convert_FAZF_to_ZF_Exp e3))
-  | IS.FA.ZBF_Neq (e1, e2) ->
+  | SIM.InfS.FA.ZBF_Neq (e1, e2) ->
     ZBF_Neq ((convert_FAZF_to_ZF_Exp e1), (convert_FAZF_to_ZF_Exp e2))
   
-  (** val convert_FAZF_to_ZF : IS.FA.coq_ZF -> Coq_sv.var coq_ZF **)
+  (** val convert_FAZF_to_ZF : SIM.InfS.FA.coq_ZF -> Coq_sv.var coq_ZF **)
   
   let rec convert_FAZF_to_ZF = function
-  | IS.FA.ZF_BF bf -> ZF_BF (convert_FAZF_to_ZF_BF bf)
-  | IS.FA.ZF_And (f1, f2) ->
+  | SIM.InfS.FA.ZF_BF bf -> ZF_BF (convert_FAZF_to_ZF_BF bf)
+  | SIM.InfS.FA.ZF_And (f1, f2) ->
     ZF_And ((convert_FAZF_to_ZF f1), (convert_FAZF_to_ZF f2))
-  | IS.FA.ZF_Or (f1, f2) ->
+  | SIM.InfS.FA.ZF_Or (f1, f2) ->
     ZF_Or ((convert_FAZF_to_ZF f1), (convert_FAZF_to_ZF f2))
-  | IS.FA.ZF_Imp (f1, f2) ->
+  | SIM.InfS.FA.ZF_Imp (f1, f2) ->
     ZF_Or ((ZF_Not (convert_FAZF_to_ZF f1)), (convert_FAZF_to_ZF f2))
-  | IS.FA.ZF_Not g -> ZF_Not (convert_FAZF_to_ZF g)
-  | IS.FA.ZF_Forall (v, q, g) -> ZF_Forall_Fin (v, (convert_FAZF_to_ZF g))
-  | IS.FA.ZF_Exists (v, q, g) -> ZF_Exists_Fin (v, (convert_FAZF_to_ZF g))
+  | SIM.InfS.FA.ZF_Not g -> ZF_Not (convert_FAZF_to_ZF g)
+  | SIM.InfS.FA.ZF_Forall (v, q, g) ->
+    ZF_Forall_Fin (v, (convert_FAZF_to_ZF g))
+  | SIM.InfS.FA.ZF_Exists (v, q, g) ->
+    ZF_Exists_Fin (v, (convert_FAZF_to_ZF g))
   
   (** val transform_ZE_to_string : coq_ZE coq_ZF -> Coq_sv.var coq_ZF **)
   
   let transform_ZE_to_string f =
-    convert_FAZF_to_ZF (IS.coq_T (convert_ZF_to_IAZF f))
+    convert_FAZF_to_ZF (SIM.InfS.coq_T (convert_ZF_to_IAZF f))
   
   (** val transform_ZE_to_string_simplify :
       coq_ZE coq_ZF -> Coq_sv.var coq_ZF **)
   
   let transform_ZE_to_string_simplify f =
-    convert_FAZF_to_ZF
-      (Obj.magic
-        (SIM.simplify (Obj.magic (IS.coq_T (convert_ZF_to_IAZF f)))))
+    convert_FAZF_to_ZF (SIM.simplify (SIM.InfS.coq_T (convert_ZF_to_IAZF f)))
  end
 
