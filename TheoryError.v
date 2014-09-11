@@ -1300,69 +1300,52 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (L : 
                                   (dissatisfied (ZF_BF z) <-> dissatisfied (eliminateMinMax z)).
     Proof. solve_eliminate. Qed.
 
-    Inductive SimpResult (f : ZF) :=
-    | EQ_Top : f = ZF_BF (ZBF_Const Top) -> SimpResult f
-    | EQ_Btm : f = ZF_BF (ZBF_Const Btm) -> SimpResult f
-    | OTHER : f <> ZF_BF (ZBF_Const Top) /\ f <> ZF_BF (ZBF_Const Btm) -> SimpResult f.
-
-    Definition judge (f : ZF) : SimpResult f.
-      destruct f eqn : ?;
-                         try (destruct z;
-                              try (destruct (val_eq_dec v Top);
-                                   [apply EQ_Top; rewrite e; trivial |
-                                    destruct (val_eq_dec v Btm); [apply EQ_Btm; rewrite e; trivial |
-                                                                  apply OTHER; split; intro; inversion H; contradiction]]);
-                              apply OTHER; intuition; inversion H);
-      apply OTHER; intuition; inversion H.
-    Defined.
-
-    (* Further Simplification: Elimination of boolean constants and min/max *)
-    Fixpoint simplifyZF (form : ZF) : ZF :=
-      match form with
-          ZF_BF bf => eliminateMinMax bf
-        | ZF_And f1 f2 => match (simplifyZF f1), (simplifyZF f2) with
-                              e1, e2 =>
-                              match (judge e1), (judge e2) with
-                                | EQ_Top _, _ => e2
-                                | _, EQ_Top _ => e1
-                                | EQ_Btm _, _
-                                | _, EQ_Btm _ => ZF_BF (ZBF_Const Btm)
-                                | _, _ => ZF_And e1 e2
-                              end
-                          end
-        | ZF_Or f1 f2 => match (simplifyZF f1), (simplifyZF f2) with
-                             e1, e2 =>
-                             match (judge e1), (judge e2) with
-                               | EQ_Top _, _
-                               | _, EQ_Top _ => ZF_BF (ZBF_Const Top)
-                               | EQ_Btm _, _ => e2
-                               | _, EQ_Btm _ => e1
-                               | _, _ => ZF_Or e1 e2
-                             end
-                         end
-        | ZF_Imp f1 f2 => match (simplifyZF f1), (simplifyZF f2) with
-                              e1, e2 =>
-                              match (judge e1), (judge e2) with
-                                | EQ_Btm _, _
-                                | _, EQ_Top _ => ZF_BF (ZBF_Const Top)
-                                | EQ_Top _, EQ_Btm _ => ZF_BF (ZBF_Const Btm)
-                                | EQ_Top _, _ => e2
-                                | OTHER _, EQ_Btm _ => ZF_Not e1
-                                | _, _ => ZF_Imp e1 e2
-                              end
-                          end
-        | ZF_Not f => match (simplifyZF f) with
-                          e => match (judge e) with
-                                 | EQ_Top _ => ZF_BF (ZBF_Const Btm)
-                                 | EQ_Btm _ => ZF_BF (ZBF_Const Top)
-                                 | OTHER _ => ZF_Not e
-                               end
-                      end
-        | ZF_Forall v q f => ZF_Forall v q (simplifyZF f)
-        | ZF_Exists v q f => ZF_Exists v q (simplifyZF f)
-      end.
-
   End Simplification.
 
 End ArithSemantics.
 
+Module ThreeValuedSimp (I : SEMANTICS_INPUT) (V : VARIABLE) (L : LEQ_RELATION I.N Three_Val_NoneError) (ZT : ZERO_PRODUCT I.N).
+  Module ArithS := ArithSemantics I V Three_Val_NoneError L ZT.
+  Import I N V L ZT Three_Val_NoneError ArithS.
+
+  Fixpoint simplify (form : ZF) : ZF :=
+    match form with
+      | ZF_BF bf => eliminateMinMax bf
+      | ZF_And f1 f2 => match (simplify f1), (simplify f2) with
+                          | ZF_BF (ZBF_Const VError), _
+                          | _, ZF_BF (ZBF_Const VError) => ZF_BF (ZBF_Const VError)
+                          | ZF_BF (ZBF_Const VFalse), _
+                          | _, ZF_BF (ZBF_Const VFalse) => ZF_BF (ZBF_Const VFalse)
+                          | ZF_BF (ZBF_Const VTrue), e
+                          | e, ZF_BF (ZBF_Const VTrue) => e
+                          | e1, e2 => ZF_And e1 e2
+                        end
+      | ZF_Or f1 f2 => match (simplify f1), (simplify f2) with
+                         | ZF_BF (ZBF_Const VError), _
+                         | _, ZF_BF (ZBF_Const VError) => ZF_BF (ZBF_Const VError)
+                         | ZF_BF (ZBF_Const VTrue), _
+                         | _, ZF_BF (ZBF_Const VTrue) => ZF_BF (ZBF_Const VTrue)
+                         | ZF_BF (ZBF_Const VFalse), e
+                         | e, ZF_BF (ZBF_Const VFalse) => e
+                         | e1, e2 => ZF_Or e1 e2
+                       end
+      | ZF_Imp f1 f2 => match (simplify f1), (simplify f2) with
+                          | ZF_BF (ZBF_Const VError), _
+                          | _, ZF_BF (ZBF_Const VError) => ZF_BF (ZBF_Const VError)
+                          | ZF_BF (ZBF_Const VFalse), _
+                          | _, ZF_BF (ZBF_Const VTrue) => ZF_BF (ZBF_Const VTrue)
+                          | ZF_BF (ZBF_Const VTrue), e => e
+                          | e, ZF_BF (ZBF_Const VFalse) => ZF_Not e
+                          | e1, e2 => ZF_Imp e1 e2
+                        end
+      | ZF_Not f => match (simplify f) with
+                      | ZF_BF (ZBF_Const VError) => ZF_BF (ZBF_Const VError)
+                      | ZF_BF (ZBF_Const VFalse) => ZF_BF (ZBF_Const VTrue)
+                      | ZF_BF (ZBF_Const VTrue) => ZF_BF (ZBF_Const VFalse)
+                      | e => ZF_Not e
+                    end
+      | ZF_Forall v q f => ZF_Forall v q (simplify f)
+      | ZF_Exists v q f => ZF_Exists v q (simplify f)
+    end.
+
+End ThreeValuedSimp.
