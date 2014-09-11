@@ -2885,26 +2885,26 @@ module type SEM_VAL =
   val coq_Btm : coq_Val
  end
 
-module Three_Val = 
+module Three_Val_NoneError = 
  struct 
   type coq_Val_Impl =
   | VTrue
   | VFalse
-  | VUnknown
+  | VError
   
   (** val coq_Val_Impl_rect : 'a1 -> 'a1 -> 'a1 -> coq_Val_Impl -> 'a1 **)
   
   let coq_Val_Impl_rect f f0 f1 = function
   | VTrue -> f
   | VFalse -> f0
-  | VUnknown -> f1
+  | VError -> f1
   
   (** val coq_Val_Impl_rec : 'a1 -> 'a1 -> 'a1 -> coq_Val_Impl -> 'a1 **)
   
   let coq_Val_Impl_rec f f0 f1 = function
   | VTrue -> f
   | VFalse -> f0
-  | VUnknown -> f1
+  | VError -> f1
   
   type coq_Val = coq_Val_Impl
   
@@ -2920,9 +2920,9 @@ module Three_Val =
       (match v2 with
        | VFalse -> true
        | _ -> false)
-    | VUnknown ->
+    | VError ->
       (match v2 with
-       | VUnknown -> true
+       | VError -> true
        | _ -> false)
   
   (** val coq_Top : coq_Val_Impl **)
@@ -2935,34 +2935,34 @@ module Three_Val =
   let coq_Btm =
     VFalse
   
-  (** val truth_and : coq_Val -> coq_Val -> coq_Val_Impl **)
-  
-  let truth_and v1 v2 =
-    match v1 with
-    | VTrue -> v2
-    | VFalse -> VFalse
-    | VUnknown ->
-      (match v2 with
-       | VFalse -> VFalse
-       | _ -> VUnknown)
-  
-  (** val truth_or : coq_Val -> coq_Val -> coq_Val_Impl **)
-  
-  let truth_or v1 v2 =
-    match v1 with
-    | VTrue -> VTrue
-    | VFalse -> v2
-    | VUnknown ->
-      (match v2 with
-       | VTrue -> VTrue
-       | _ -> VUnknown)
-  
   (** val truth_not : coq_Val_Impl -> coq_Val_Impl **)
   
   let truth_not = function
   | VTrue -> VFalse
   | VFalse -> VTrue
-  | VUnknown -> VUnknown
+  | VError -> VError
+  
+  (** val truth_and : coq_Val -> coq_Val -> coq_Val_Impl **)
+  
+  let truth_and v1 v2 =
+    match v1 with
+    | VTrue -> v2
+    | VFalse ->
+      (match v2 with
+       | VError -> VError
+       | _ -> VFalse)
+    | VError -> VError
+  
+  (** val truth_or : coq_Val -> coq_Val -> coq_Val_Impl **)
+  
+  let truth_or v1 v2 =
+    match v1 with
+    | VTrue ->
+      (match v2 with
+       | VError -> VError
+       | _ -> VTrue)
+    | VFalse -> v2
+    | VError -> VError
  end
 
 module type NUMBER = 
@@ -3112,12 +3112,12 @@ module FinLeqRelation =
     if z_le_dec x y then VAL.coq_Top else VAL.coq_Btm
  end
 
-module None3ValRel = 
+module NoneError3ValRel = 
  struct 
-  (** val noneVal : Three_Val.coq_Val_Impl **)
+  (** val noneVal : Three_Val_NoneError.coq_Val_Impl **)
   
   let noneVal =
-    Three_Val.VUnknown
+    Three_Val_NoneError.VError
  end
 
 module InfLeqRelation = 
@@ -3263,9 +3263,6 @@ module ArithSemantics =
  functor (I:SEMANTICS_INPUT) ->
  functor (V:VARIABLE) ->
  functor (VAL:SEM_VAL) ->
- functor (S:sig 
-  val noneVal : VAL.coq_Val
- end) ->
  functor (L:sig 
   val num_leq : I.N.coq_A -> I.N.coq_A -> VAL.coq_Val
  end) ->
@@ -3574,92 +3571,6 @@ module ArithSemantics =
     ZF_Or ((ZF_And ((ZF_BF (ZBF_Eq (e1, e2))), (ZF_BF (ZBF_Lte (e2, e3))))),
       (ZF_And ((ZF_BF (ZBF_Eq (e1, e3))), (ZF_BF (ZBF_Lte (e3, e2))))))
   | _ -> ZF_BF bf
-  
-  type coq_SimpResult =
-  | EQ_Top
-  | EQ_Btm
-  | OTHER
-  
-  (** val coq_SimpResult_rect :
-      coq_ZF -> (__ -> 'a1) -> (__ -> 'a1) -> (__ -> 'a1) -> coq_SimpResult
-      -> 'a1 **)
-  
-  let coq_SimpResult_rect f f0 f1 f2 = function
-  | EQ_Top -> f0 __
-  | EQ_Btm -> f1 __
-  | OTHER -> f2 __
-  
-  (** val coq_SimpResult_rec :
-      coq_ZF -> (__ -> 'a1) -> (__ -> 'a1) -> (__ -> 'a1) -> coq_SimpResult
-      -> 'a1 **)
-  
-  let coq_SimpResult_rec f f0 f1 f2 = function
-  | EQ_Top -> f0 __
-  | EQ_Btm -> f1 __
-  | OTHER -> f2 __
-  
-  (** val judge : coq_ZF -> coq_SimpResult **)
-  
-  let judge = function
-  | ZF_BF z0 ->
-    (match z0 with
-     | ZBF_Const v ->
-       let s = VAL.val_eq_dec v VAL.coq_Top in
-       if s
-       then EQ_Top
-       else let s0 = VAL.val_eq_dec v VAL.coq_Btm in
-            if s0 then EQ_Btm else OTHER
-     | _ -> OTHER)
-  | _ -> OTHER
-  
-  (** val simplifyZF : coq_ZF -> coq_ZF **)
-  
-  let rec simplifyZF = function
-  | ZF_BF bf -> eliminateMinMax bf
-  | ZF_And (f1, f2) ->
-    (match judge (simplifyZF f1) with
-     | EQ_Top -> simplifyZF f2
-     | EQ_Btm ->
-       (match judge (simplifyZF f2) with
-        | EQ_Top -> simplifyZF f1
-        | _ -> ZF_BF (ZBF_Const VAL.coq_Btm))
-     | OTHER ->
-       (match judge (simplifyZF f2) with
-        | EQ_Top -> simplifyZF f1
-        | EQ_Btm -> ZF_BF (ZBF_Const VAL.coq_Btm)
-        | OTHER -> ZF_And ((simplifyZF f1), (simplifyZF f2))))
-  | ZF_Or (f1, f2) ->
-    (match judge (simplifyZF f1) with
-     | EQ_Top -> ZF_BF (ZBF_Const VAL.coq_Top)
-     | EQ_Btm ->
-       (match judge (simplifyZF f2) with
-        | EQ_Top -> ZF_BF (ZBF_Const VAL.coq_Top)
-        | _ -> simplifyZF f2)
-     | OTHER ->
-       (match judge (simplifyZF f2) with
-        | EQ_Top -> ZF_BF (ZBF_Const VAL.coq_Top)
-        | EQ_Btm -> simplifyZF f1
-        | OTHER -> ZF_Or ((simplifyZF f1), (simplifyZF f2))))
-  | ZF_Imp (f1, f2) ->
-    (match judge (simplifyZF f1) with
-     | EQ_Top ->
-       (match judge (simplifyZF f2) with
-        | EQ_Top -> ZF_BF (ZBF_Const VAL.coq_Top)
-        | EQ_Btm -> ZF_BF (ZBF_Const VAL.coq_Btm)
-        | OTHER -> simplifyZF f2)
-     | EQ_Btm -> ZF_BF (ZBF_Const VAL.coq_Top)
-     | OTHER ->
-       (match judge (simplifyZF f2) with
-        | EQ_Top -> ZF_BF (ZBF_Const VAL.coq_Top)
-        | EQ_Btm -> ZF_Not (simplifyZF f1)
-        | OTHER -> ZF_Imp ((simplifyZF f1), (simplifyZF f2))))
-  | ZF_Not f ->
-    (match judge (simplifyZF f) with
-     | EQ_Top -> ZF_BF (ZBF_Const VAL.coq_Btm)
-     | EQ_Btm -> ZF_BF (ZBF_Const VAL.coq_Top)
-     | OTHER -> ZF_Not (simplifyZF f))
-  | ZF_Forall (v, q, f) -> ZF_Forall (v, q, (simplifyZF f))
-  | ZF_Exists (v, q, f) -> ZF_Exists (v, q, (simplifyZF f))
  end
 
 module InfSolver = 
@@ -3675,11 +3586,11 @@ module InfSolver =
   
   module FinRel = FinLeqRelation(VAL)
   
-  module IA = ArithSemantics(PureInfinity)(Coq_sv)(VAL)(S)(InfRel)(IZT)
+  module IA = ArithSemantics(PureInfinity)(Coq_sv)(VAL)(InfRel)(IZT)
   
-  module FA = ArithSemantics(PureInt)(Coq_sv)(VAL)(S)(FinRel)(FZT)
+  module FA = ArithSemantics(PureInt)(Coq_sv)(VAL)(FinRel)(FZT)
   
-  module I2F = ArithSemantics(IntToInfinity)(Coq_sv)(VAL)(S)(InfRel)(IZT)
+  module I2F = ArithSemantics(IntToInfinity)(Coq_sv)(VAL)(InfRel)(IZT)
   
   (** val inf_trans_exp : IA.coq_ZExp -> I2F.coq_ZExp **)
   
@@ -4161,6 +4072,170 @@ module InfSolver =
     int_trans (inf_trans f)
  end
 
+module ThreeValuedSimp = 
+ functor (Coq_sv:VARIABLE) ->
+ functor (FZT:ZERO_FIN) ->
+ functor (IZT:ZERO_INF) ->
+ struct 
+  module InfS = InfSolver(Coq_sv)(Three_Val_NoneError)(NoneError3ValRel)(FZT)(IZT)
+  
+  (** val simplify : InfS.FA.coq_ZF -> InfS.FA.coq_ZF **)
+  
+  let rec simplify = function
+  | InfS.FA.ZF_BF bf -> InfS.FA.eliminateMinMax bf
+  | InfS.FA.ZF_And (f1, f2) ->
+    (match simplify f1 with
+     | InfS.FA.ZF_BF z0 ->
+       (match z0 with
+        | InfS.FA.ZBF_Const v ->
+          (match v with
+           | Three_Val_NoneError.VTrue -> simplify f2
+           | Three_Val_NoneError.VFalse ->
+             (match simplify f2 with
+              | InfS.FA.ZF_BF z1 ->
+                (match z1 with
+                 | InfS.FA.ZBF_Const v0 ->
+                   (match v0 with
+                    | Three_Val_NoneError.VTrue ->
+                      InfS.FA.ZF_BF (InfS.FA.ZBF_Const
+                        Three_Val_NoneError.VFalse)
+                    | x -> InfS.FA.ZF_BF (InfS.FA.ZBF_Const x))
+                 | _ ->
+                   InfS.FA.ZF_BF (InfS.FA.ZBF_Const
+                     Three_Val_NoneError.VFalse))
+              | _ ->
+                InfS.FA.ZF_BF (InfS.FA.ZBF_Const Three_Val_NoneError.VFalse))
+           | Three_Val_NoneError.VError ->
+             InfS.FA.ZF_BF (InfS.FA.ZBF_Const Three_Val_NoneError.VError))
+        | x ->
+          let e1 = InfS.FA.ZF_BF x in
+          (match simplify f2 with
+           | InfS.FA.ZF_BF z1 ->
+             (match z1 with
+              | InfS.FA.ZBF_Const v ->
+                (match v with
+                 | Three_Val_NoneError.VTrue -> e1
+                 | x0 -> InfS.FA.ZF_BF (InfS.FA.ZBF_Const x0))
+              | x0 -> InfS.FA.ZF_And (e1, (InfS.FA.ZF_BF x0)))
+           | x0 -> InfS.FA.ZF_And (e1, x0)))
+     | x ->
+       (match simplify f2 with
+        | InfS.FA.ZF_BF z0 ->
+          (match z0 with
+           | InfS.FA.ZBF_Const v ->
+             (match v with
+              | Three_Val_NoneError.VTrue -> x
+              | x0 -> InfS.FA.ZF_BF (InfS.FA.ZBF_Const x0))
+           | x0 -> InfS.FA.ZF_And (x, (InfS.FA.ZF_BF x0)))
+        | x0 -> InfS.FA.ZF_And (x, x0)))
+  | InfS.FA.ZF_Or (f1, f2) ->
+    (match simplify f1 with
+     | InfS.FA.ZF_BF z0 ->
+       (match z0 with
+        | InfS.FA.ZBF_Const v ->
+          (match v with
+           | Three_Val_NoneError.VTrue ->
+             (match simplify f2 with
+              | InfS.FA.ZF_BF z1 ->
+                (match z1 with
+                 | InfS.FA.ZBF_Const v0 ->
+                   (match v0 with
+                    | Three_Val_NoneError.VFalse ->
+                      InfS.FA.ZF_BF (InfS.FA.ZBF_Const
+                        Three_Val_NoneError.VTrue)
+                    | x -> InfS.FA.ZF_BF (InfS.FA.ZBF_Const x))
+                 | _ ->
+                   InfS.FA.ZF_BF (InfS.FA.ZBF_Const
+                     Three_Val_NoneError.VTrue))
+              | _ ->
+                InfS.FA.ZF_BF (InfS.FA.ZBF_Const Three_Val_NoneError.VTrue))
+           | Three_Val_NoneError.VFalse -> simplify f2
+           | Three_Val_NoneError.VError ->
+             InfS.FA.ZF_BF (InfS.FA.ZBF_Const Three_Val_NoneError.VError))
+        | x ->
+          let e1 = InfS.FA.ZF_BF x in
+          (match simplify f2 with
+           | InfS.FA.ZF_BF z1 ->
+             (match z1 with
+              | InfS.FA.ZBF_Const v ->
+                (match v with
+                 | Three_Val_NoneError.VFalse -> e1
+                 | x0 -> InfS.FA.ZF_BF (InfS.FA.ZBF_Const x0))
+              | x0 -> InfS.FA.ZF_Or (e1, (InfS.FA.ZF_BF x0)))
+           | x0 -> InfS.FA.ZF_Or (e1, x0)))
+     | x ->
+       (match simplify f2 with
+        | InfS.FA.ZF_BF z0 ->
+          (match z0 with
+           | InfS.FA.ZBF_Const v ->
+             (match v with
+              | Three_Val_NoneError.VFalse -> x
+              | x0 -> InfS.FA.ZF_BF (InfS.FA.ZBF_Const x0))
+           | x0 -> InfS.FA.ZF_Or (x, (InfS.FA.ZF_BF x0)))
+        | x0 -> InfS.FA.ZF_Or (x, x0)))
+  | InfS.FA.ZF_Imp (f1, f2) ->
+    (match simplify f1 with
+     | InfS.FA.ZF_BF z0 ->
+       (match z0 with
+        | InfS.FA.ZBF_Const v ->
+          (match v with
+           | Three_Val_NoneError.VTrue -> simplify f2
+           | Three_Val_NoneError.VFalse ->
+             (match simplify f2 with
+              | InfS.FA.ZF_BF z1 ->
+                (match z1 with
+                 | InfS.FA.ZBF_Const v0 ->
+                   (match v0 with
+                    | Three_Val_NoneError.VFalse ->
+                      InfS.FA.ZF_BF (InfS.FA.ZBF_Const
+                        Three_Val_NoneError.VTrue)
+                    | x -> InfS.FA.ZF_BF (InfS.FA.ZBF_Const x))
+                 | _ ->
+                   InfS.FA.ZF_BF (InfS.FA.ZBF_Const
+                     Three_Val_NoneError.VTrue))
+              | _ ->
+                InfS.FA.ZF_BF (InfS.FA.ZBF_Const Three_Val_NoneError.VTrue))
+           | Three_Val_NoneError.VError ->
+             InfS.FA.ZF_BF (InfS.FA.ZBF_Const Three_Val_NoneError.VError))
+        | x ->
+          let e1 = InfS.FA.ZF_BF x in
+          (match simplify f2 with
+           | InfS.FA.ZF_BF z1 ->
+             (match z1 with
+              | InfS.FA.ZBF_Const v ->
+                (match v with
+                 | Three_Val_NoneError.VFalse -> InfS.FA.ZF_Not e1
+                 | x0 -> InfS.FA.ZF_BF (InfS.FA.ZBF_Const x0))
+              | x0 -> InfS.FA.ZF_Imp (e1, (InfS.FA.ZF_BF x0)))
+           | x0 -> InfS.FA.ZF_Imp (e1, x0)))
+     | x ->
+       (match simplify f2 with
+        | InfS.FA.ZF_BF z0 ->
+          (match z0 with
+           | InfS.FA.ZBF_Const v ->
+             (match v with
+              | Three_Val_NoneError.VFalse -> InfS.FA.ZF_Not x
+              | x0 -> InfS.FA.ZF_BF (InfS.FA.ZBF_Const x0))
+           | x0 -> InfS.FA.ZF_Imp (x, (InfS.FA.ZF_BF x0)))
+        | x0 -> InfS.FA.ZF_Imp (x, x0)))
+  | InfS.FA.ZF_Not f ->
+    (match simplify f with
+     | InfS.FA.ZF_BF z0 ->
+       (match z0 with
+        | InfS.FA.ZBF_Const v ->
+          (match v with
+           | Three_Val_NoneError.VTrue ->
+             InfS.FA.ZF_BF (InfS.FA.ZBF_Const Three_Val_NoneError.VFalse)
+           | Three_Val_NoneError.VFalse ->
+             InfS.FA.ZF_BF (InfS.FA.ZBF_Const Three_Val_NoneError.VTrue)
+           | Three_Val_NoneError.VError ->
+             InfS.FA.ZF_BF (InfS.FA.ZBF_Const Three_Val_NoneError.VError))
+        | x -> InfS.FA.ZF_Not (InfS.FA.ZF_BF x))
+     | x -> InfS.FA.ZF_Not x)
+  | InfS.FA.ZF_Forall (v, q, f) -> InfS.FA.ZF_Forall (v, q, (simplify f))
+  | InfS.FA.ZF_Exists (v, q, f) -> InfS.FA.ZF_Exists (v, q, (simplify f))
+ end
+
 module type STRVAR = 
  sig 
   type var 
@@ -4175,7 +4250,11 @@ module type STRVAR =
 module InfSolverExtract = 
  functor (Coq_sv:STRVAR) ->
  struct 
-  module IS = InfSolver(Coq_sv)(Three_Val)(None3ValRel)(FinZero)(InfZeroAll)
+  module Three_Val = Three_Val_NoneError
+  
+  module SIM = ThreeValuedSimp(Coq_sv)(FinZero)(InfZeroAll)
+  
+  module IS = SIM.InfS
   
   (** val coq_Z_of_bool : bool -> z **)
   
@@ -4484,8 +4563,8 @@ module InfSolverExtract =
   let rec convert_ZF_to_IAZF_BF = function
   | ZBF_Const b ->
     if b
-    then IS.IA.ZBF_Const Three_Val.VTrue
-    else IS.IA.ZBF_Const Three_Val.VFalse
+    then IS.IA.ZBF_Const (Obj.magic Three_Val.VTrue)
+    else IS.IA.ZBF_Const (Obj.magic Three_Val.VFalse)
   | ZBF_Lt (e1, e2) ->
     IS.IA.ZBF_Lt ((convert_ZF_to_IAZF_Exp e1), (convert_ZF_to_IAZF_Exp e2))
   | ZBF_Lte (e1, e2) ->
@@ -4544,7 +4623,7 @@ module InfSolverExtract =
   let rec convert_FAZF_to_ZF_BF = function
   | IS.FA.ZBF_Const b ->
     (match b with
-     | Three_Val.VTrue -> ZBF_Const true
+     | Three_Val_NoneError.VTrue -> ZBF_Const true
      | _ -> ZBF_Const false)
   | IS.FA.ZBF_Lt (e1, e2) ->
     ZBF_Lt ((convert_FAZF_to_ZF_Exp e1), (convert_FAZF_to_ZF_Exp e2))
@@ -4588,6 +4667,8 @@ module InfSolverExtract =
       coq_ZE coq_ZF -> Coq_sv.var coq_ZF **)
   
   let transform_ZE_to_string_simplify f =
-    convert_FAZF_to_ZF (IS.FA.simplifyZF (IS.coq_T (convert_ZF_to_IAZF f)))
+    convert_FAZF_to_ZF
+      (Obj.magic
+        (SIM.simplify (Obj.magic (IS.coq_T (convert_ZF_to_IAZF f)))))
  end
 
