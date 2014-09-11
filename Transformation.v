@@ -13,13 +13,13 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZER
   Module FinRel := FinLeqRelation VAL.
 
   (* Both variable and constant domain can be integers with infinity. *)
-  Module IA := ArithSemantics PureInfinity sv VAL S InfRel IZT.
+  Module IA := ArithSemantics PureInfinity sv VAL InfRel IZT.
 
   (* Both variable and constant domain are integers. *)
-  Module FA := ArithSemantics PureInt sv VAL S FinRel FZT.
+  Module FA := ArithSemantics PureInt sv VAL FinRel FZT.
 
   (* Variable domain is integers and constant domain is integers with infinity. *)
-  Module I2F := ArithSemantics IntToInfinity sv VAL S InfRel IZT.
+  Module I2F := ArithSemantics IntToInfinity sv VAL InfRel IZT.
 
   Section RealExtension.
 

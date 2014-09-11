@@ -487,7 +487,7 @@ Module Type NONE_RELATION (VAL : SEM_VAL).
   Axiom none_tautology_4 : truth_or noneVal Btm = noneVal.
 End NONE_RELATION.
 
-Module Type NoneError3ValRel <: NONE_RELATION Three_Val_NoneError.
+Module NoneError3ValRel <: NONE_RELATION Three_Val_NoneError.
   Import Three_Val_NoneError.
   Definition noneVal := VError.
   Lemma none_neq_top: noneVal <> Top. Proof. intro; discriminate H. Qed.
@@ -748,9 +748,8 @@ Module InfZeroInf <: ZERO_INF.
 
 End InfZeroInf.
 
-Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
-       (S: NONE_RELATION VAL) (L : LEQ_RELATION I.N VAL) (ZT : ZERO_PRODUCT I.N).
-  Import I N V VAL S L ZT.
+Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (L : LEQ_RELATION I.N VAL) (ZT : ZERO_PRODUCT I.N).
+  Import I N V VAL L ZT.
 
   (* Syntax *)
   Section OriginalForm.

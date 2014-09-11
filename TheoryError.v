@@ -34,83 +34,6 @@ Module Type SEM_VAL.
   Axiom tautology_6 : truth_or Top Btm = Top.
 End SEM_VAL.
 
-Module Three_Val <: SEM_VAL.
-
-  Inductive Val_Impl := VTrue | VFalse | VUnknown.
-  Definition Val := Val_Impl.
-
-  Definition val_eq_dec : forall v1 v2 : Val, {v1 = v2} + {v1 <> v2}.
-    intros; destruct v1, v2; intuition; right; intro; inversion H.
-  Defined.
-
-  Definition Top := VTrue.
-  Definition Btm := VFalse.
-
-  Lemma top_neq_btm: Top <> Btm.
-  Proof. intro; inversion H. Qed.
-
-  Definition truth_and (v1 v2 : Val) :=
-    match v1, v2 with
-      | VTrue    , VTrue    => VTrue
-      | VTrue    , VUnknown => VUnknown
-      | VTrue    , VFalse   => VFalse
-      | VUnknown , VTrue    => VUnknown
-      | VUnknown , VUnknown => VUnknown
-      | VUnknown , VFalse   => VFalse
-      | VFalse   , _        => VFalse
-    end.
-
-  Definition truth_or (v1 v2 : Val) :=
-    match v1, v2 with
-      | VTrue    , _        => VTrue
-      | VUnknown , VTrue    => VTrue
-      | VUnknown , VUnknown => VUnknown
-      | VUnknown , VFalse   => VUnknown
-      | VFalse   , VTrue    => VTrue
-      | VFalse   , VUnknown => VUnknown
-      | VFalse   , VFalse   => VFalse
-    end.
-
-  Definition truth_not v :=
-    match v with
-      | VTrue    => VFalse
-      | VUnknown => VUnknown
-      | VFalse   => VTrue
-    end.
-
-  Lemma truth_and_comm : forall v1 v2, truth_and v1 v2 = truth_and v2 v1.
-  Proof. intros; destruct v1, v2; simpl; trivial. Qed.
-
-  Lemma truth_or_comm : forall v1 v2, truth_or v1 v2 = truth_or v2 v1.
-  Proof. intros; destruct v1, v2; simpl; trivial. Qed.
-
-  Lemma truth_and_assoc : forall v1 v2 v3, truth_and v1 (truth_and v2 v3) = truth_and (truth_and v1 v2) v3.
-  Proof. intros; destruct v1, v2, v3; simpl; trivial. Qed.
-
-  Lemma truth_or_assoc : forall v1 v2 v3, truth_or v1 (truth_or v2 v3) = truth_or (truth_or v1 v2) v3.
-  Proof. intros; destruct v1, v2, v3; simpl; trivial. Qed.
-
-  Lemma truth_or_true_iff : forall v1 v2, truth_or v1 v2 = Top -> v1 = Top \/ v2 = Top.
-  Proof. intros; destruct v1, v2; simpl; intuition; inversion H0. Qed.
-
-  Lemma truth_and_true_iff : forall v1 v2, truth_and v1 v2 = Top -> v1 = Top /\ v2 = Top.
-  Proof. intros; destruct v1, v2; simpl; intuition; inversion H. Qed.
-
-  Lemma truth_or_false_iff : forall v1 v2, truth_or v1 v2 = Btm -> v1 = Btm /\ v2 = Btm.
-  Proof. intros; destruct v1, v2; simpl; intuition; inversion H. Qed.
-
-  Lemma truth_and_false_iff : forall v1 v2, truth_and v1 v2 = Btm -> v1 = Btm \/ v2 = Btm.
-  Proof. intros; destruct v1, v2; simpl; intuition; inversion H0. Qed.
-
-  Lemma tautology_1 : truth_not Btm = Top. Proof. intuition. Qed.
-  Lemma tautology_2 : truth_not Top = Btm. Proof. intuition. Qed.
-  Lemma tautology_3 : forall v, truth_and v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
-  Lemma tautology_4 : truth_and Top Btm = Btm. Proof. intuition. Qed.
-  Lemma tautology_5 : forall v, truth_or v v = v. Proof. intros; destruct v; simpl; trivial. Qed.
-  Lemma tautology_6 : truth_or Top Btm = Top. Proof. intuition. Qed.
-
-End Three_Val.
-
 Module Three_Val_NoneError <: SEM_VAL.
 
   Inductive Val_Impl := VTrue | VFalse | VError.
@@ -498,7 +421,7 @@ Module FinLeqRelation (VAL : SEM_VAL) <: LEQ_RELATION ZNumLattice VAL.
 
   Lemma num_leq_after_normal: forall x y z, num_leq z x = Btm -> num_leq z y = Top -> num_leq x y = Top \/ num_leq x y = Btm.
   Proof. solve_num_leq_trans_fin. Qed.
-  
+
 End FinLeqRelation.
 
 Module Type NONE_RELATION (VAL : SEM_VAL).
@@ -511,7 +434,7 @@ Module Type NONE_RELATION (VAL : SEM_VAL).
   Axiom none_tautology_4 : truth_or noneVal Btm = noneVal.
 End NONE_RELATION.
 
-Module Type NoneError3ValRel <: NONE_RELATION Three_Val_NoneError.
+Module NoneError3ValRel <: NONE_RELATION Three_Val_NoneError.
   Import Three_Val_NoneError.
   Definition noneVal := VError.
   Lemma none_neq_top: noneVal <> Top. Proof. intro; discriminate H. Qed.
@@ -520,16 +443,6 @@ Module Type NoneError3ValRel <: NONE_RELATION Three_Val_NoneError.
   Lemma none_tautology_3 : truth_or (truth_and noneVal Btm) noneVal = noneVal. Proof. intuition. Qed.
   Lemma none_tautology_4 : truth_or noneVal Btm = noneVal. Proof. intuition. Qed.
 End NoneError3ValRel.
-
-Module None3ValRel <: NONE_RELATION Three_Val.
-  Import Three_Val.
-  Definition noneVal := VUnknown.
-  Lemma none_neq_top: noneVal <> Top. Proof. intro; discriminate H. Qed.
-  Lemma none_tautology_1 : truth_and noneVal (truth_not noneVal) = noneVal. Proof. intuition. Qed.
-  Lemma none_tautology_2 : truth_and noneVal Top = noneVal. Proof. intuition. Qed.
-  Lemma none_tautology_3 : truth_or (truth_and noneVal Btm) noneVal = noneVal. Proof. intuition. Qed.
-  Lemma none_tautology_4 : truth_or noneVal Btm = noneVal. Proof. intuition. Qed.
-End None3ValRel.
 
 Module NoneAlwaysFalse (VAL : SEM_VAL) <: NONE_RELATION VAL.
   Import VAL.
@@ -792,9 +705,8 @@ Module InfZeroInf <: ZERO_INF.
 
 End InfZeroInf.
 
-Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
-       (S: NONE_RELATION VAL) (L : LEQ_RELATION I.N VAL) (ZT : ZERO_PRODUCT I.N).
-  Import I N V VAL S L ZT.
+Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (L : LEQ_RELATION I.N VAL) (ZT : ZERO_PRODUCT I.N).
+  Import I N V VAL L ZT.
 
   (* Syntax *)
   Section OriginalForm.
@@ -1453,3 +1365,4 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL)
   End Simplification.
 
 End ArithSemantics.
+
