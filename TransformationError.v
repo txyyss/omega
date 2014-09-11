@@ -1470,7 +1470,7 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZER
 
 End InfSolver.
 
-Module ThreeValuedSimp (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZERO_FIN) (IZT : ZERO_INF).
+Module ThreeValuedSimp (sv:VARIABLE) (FZT : ZERO_FIN) (IZT : ZERO_INF).
   Module InfS := InfSolver sv Three_Val_NoneError NoneError3ValRel FZT IZT.
   Import Three_Val_NoneError InfS.FA.
 
