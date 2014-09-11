@@ -1469,3 +1469,49 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZER
   Qed.
 
 End InfSolver.
+
+Module ThreeValuedSimp (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZERO_FIN) (IZT : ZERO_INF).
+  Module InfS := InfSolver sv Three_Val_NoneError NoneError3ValRel FZT IZT.
+  Import Three_Val_NoneError InfS.FA.
+
+  Fixpoint simplify (form : ZF) : ZF :=
+    match form with
+      | ZF_BF bf => eliminateMinMax bf
+      | ZF_And f1 f2 => match (simplify f1), (simplify f2) with
+                          | ZF_BF (ZBF_Const VError), _
+                          | _, ZF_BF (ZBF_Const VError) => ZF_BF (ZBF_Const VError)
+                          | ZF_BF (ZBF_Const VFalse), _
+                          | _, ZF_BF (ZBF_Const VFalse) => ZF_BF (ZBF_Const VFalse)
+                          | ZF_BF (ZBF_Const VTrue), e
+                          | e, ZF_BF (ZBF_Const VTrue) => e
+                          | e1, e2 => ZF_And e1 e2
+                        end
+      | ZF_Or f1 f2 => match (simplify f1), (simplify f2) with
+                         | ZF_BF (ZBF_Const VError), _
+                         | _, ZF_BF (ZBF_Const VError) => ZF_BF (ZBF_Const VError)
+                         | ZF_BF (ZBF_Const VTrue), _
+                         | _, ZF_BF (ZBF_Const VTrue) => ZF_BF (ZBF_Const VTrue)
+                         | ZF_BF (ZBF_Const VFalse), e
+                         | e, ZF_BF (ZBF_Const VFalse) => e
+                         | e1, e2 => ZF_Or e1 e2
+                       end
+      | ZF_Imp f1 f2 => match (simplify f1), (simplify f2) with
+                          | ZF_BF (ZBF_Const VError), _
+                          | _, ZF_BF (ZBF_Const VError) => ZF_BF (ZBF_Const VError)
+                          | ZF_BF (ZBF_Const VFalse), _
+                          | _, ZF_BF (ZBF_Const VTrue) => ZF_BF (ZBF_Const VTrue)
+                          | ZF_BF (ZBF_Const VTrue), e => e
+                          | e, ZF_BF (ZBF_Const VFalse) => ZF_Not e
+                          | e1, e2 => ZF_Imp e1 e2
+                        end
+      | ZF_Not f => match (simplify f) with
+                      | ZF_BF (ZBF_Const VError) => ZF_BF (ZBF_Const VError)
+                      | ZF_BF (ZBF_Const VFalse) => ZF_BF (ZBF_Const VTrue)
+                      | ZF_BF (ZBF_Const VTrue) => ZF_BF (ZBF_Const VFalse)
+                      | e => ZF_Not e
+                    end
+      | ZF_Forall v q f => ZF_Forall v q (simplify f)
+      | ZF_Exists v q f => ZF_Exists v q (simplify f)
+    end.
+
+End ThreeValuedSimp.
