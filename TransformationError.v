@@ -252,7 +252,7 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZER
                  | [|- context[I2F.dissatisfied (I2F.ZF_Forall _ _ _)]] => rewrite I2F.dissatisfied_unfold
                  | [|- context[I2F.dissatisfied (I2F.ZF_Exists _ _ _)]] => rewrite I2F.dissatisfied_unfold
                  | [|- context[I2F.dissatisfied (I2F.ZF_Not _)]] => rewrite I2F.dissatisfied_unfold
-                 |[q : PureInfinity.Q |- _] => destruct q
+                 | [q : PureInfinity.Q |- _] => destruct q
 
                  | [|- _ <-> _] => split; intros
                  | [H: _ /\ _ |- _] => destruct H
@@ -1474,44 +1474,72 @@ Module ThreeValuedSimp (sv:VARIABLE) (FZT : ZERO_FIN) (IZT : ZERO_INF).
   Module InfS := InfSolver sv Three_Val_NoneError NoneError3ValRel FZT IZT.
   Import Three_Val_NoneError InfS.FA.
 
+  Inductive SimpResult (f : ZF) :=
+  | EQ_TRUE : f = ZF_BF (ZBF_Const VTrue) -> SimpResult f
+  | EQ_FALSE : f = ZF_BF (ZBF_Const VFalse) -> SimpResult f
+  | EQ_ERROR : f = ZF_BF (ZBF_Const VError) -> SimpResult f
+  | OTHER : f <> ZF_BF (ZBF_Const VTrue) /\ f <> ZF_BF (ZBF_Const VFalse) /\ f <> ZF_BF (ZBF_Const VError) -> SimpResult f.
+
+  Definition judge (f : ZF) : SimpResult f.
+    destruct f eqn : ?; first [destruct z; first [destruct v; [apply EQ_TRUE | apply EQ_FALSE | apply EQ_ERROR]; trivial |
+                                                  apply OTHER; intuition; discriminate H] |
+                               apply OTHER; intuition; discriminate H].
+  Defined.
+
   Fixpoint simplify (form : ZF) : ZF :=
     match form with
       | ZF_BF bf => eliminateMinMax bf
       | ZF_And f1 f2 => match (simplify f1), (simplify f2) with
-                          | ZF_BF (ZBF_Const VError), _
-                          | _, ZF_BF (ZBF_Const VError) => ZF_BF (ZBF_Const VError)
-                          | ZF_BF (ZBF_Const VFalse), _
-                          | _, ZF_BF (ZBF_Const VFalse) => ZF_BF (ZBF_Const VFalse)
-                          | ZF_BF (ZBF_Const VTrue), e
-                          | e, ZF_BF (ZBF_Const VTrue) => e
-                          | e1, e2 => ZF_And e1 e2
-                        end
+                            e1, e2 => match (judge e1), (judge e2) with
+                                        | EQ_ERROR _, _
+                                        | _, EQ_ERROR _ => ZF_BF (ZBF_Const VError)
+                                        | EQ_FALSE _, _
+                                        | _, EQ_FALSE _ => ZF_BF (ZBF_Const VFalse)
+                                        | EQ_TRUE _, _ => e2
+                                        | _, EQ_TRUE _ => e1
+                                        | _, _ => ZF_And e1 e2
+                                      end end
       | ZF_Or f1 f2 => match (simplify f1), (simplify f2) with
-                         | ZF_BF (ZBF_Const VError), _
-                         | _, ZF_BF (ZBF_Const VError) => ZF_BF (ZBF_Const VError)
-                         | ZF_BF (ZBF_Const VTrue), _
-                         | _, ZF_BF (ZBF_Const VTrue) => ZF_BF (ZBF_Const VTrue)
-                         | ZF_BF (ZBF_Const VFalse), e
-                         | e, ZF_BF (ZBF_Const VFalse) => e
-                         | e1, e2 => ZF_Or e1 e2
-                       end
+                           e1, e2 => match (judge e1), (judge e2) with
+                                       | EQ_ERROR _, _
+                                       | _, EQ_ERROR _ => ZF_BF (ZBF_Const VError)
+                                       | EQ_TRUE _, _
+                                       | _, EQ_TRUE _ => ZF_BF (ZBF_Const VTrue)
+                                       | EQ_FALSE _, _ => e2
+                                       | _, EQ_FALSE _ => e1
+                                       | _, _ => ZF_Or e1 e2
+                                     end end
       | ZF_Imp f1 f2 => match (simplify f1), (simplify f2) with
-                          | ZF_BF (ZBF_Const VError), _
-                          | _, ZF_BF (ZBF_Const VError) => ZF_BF (ZBF_Const VError)
-                          | ZF_BF (ZBF_Const VFalse), _
-                          | _, ZF_BF (ZBF_Const VTrue) => ZF_BF (ZBF_Const VTrue)
-                          | ZF_BF (ZBF_Const VTrue), e => e
-                          | e, ZF_BF (ZBF_Const VFalse) => ZF_Not e
-                          | e1, e2 => ZF_Imp e1 e2
-                        end
+                            e1, e2 => match (judge e1), (judge e2) with
+                                        | EQ_ERROR _, _
+                                        | _, EQ_ERROR _ => ZF_BF (ZBF_Const VError)
+                                        | EQ_FALSE _, _
+                                        | _, EQ_TRUE _ => ZF_BF (ZBF_Const VTrue)
+                                        | EQ_TRUE _, _ => e2
+                                        | _, EQ_FALSE _ => ZF_Not e1
+                                        | _, _ => ZF_Imp e1 e2
+                                      end end
       | ZF_Not f => match (simplify f) with
-                      | ZF_BF (ZBF_Const VError) => ZF_BF (ZBF_Const VError)
-                      | ZF_BF (ZBF_Const VFalse) => ZF_BF (ZBF_Const VTrue)
-                      | ZF_BF (ZBF_Const VTrue) => ZF_BF (ZBF_Const VFalse)
-                      | e => ZF_Not e
-                    end
-      | ZF_Forall v q f => ZF_Forall v q (simplify f)
-      | ZF_Exists v q f => ZF_Exists v q (simplify f)
+                        e => match (judge e) with
+                               | EQ_ERROR _ => ZF_BF (ZBF_Const VError)
+                               | EQ_FALSE _ => ZF_BF (ZBF_Const VTrue)
+                               | EQ_TRUE _ => ZF_BF (ZBF_Const VFalse)
+                               | _ => ZF_Not e
+                             end end
+      | ZF_Forall v q f => match (simplify f) with
+                               e => match (judge e) with
+                                      | EQ_ERROR _ => ZF_BF (ZBF_Const VError)
+                                      | EQ_FALSE _ => ZF_BF (ZBF_Const VFalse)
+                                      | EQ_TRUE _ => ZF_BF (ZBF_Const VTrue)
+                                      | _ => ZF_Forall v q e
+                                    end end
+      | ZF_Exists v q f => match (simplify f) with
+                               e => match (judge e) with
+                                      | EQ_ERROR _ => ZF_BF (ZBF_Const VError)
+                                      | EQ_FALSE _ => ZF_BF (ZBF_Const VFalse)
+                                      | EQ_TRUE _ => ZF_BF (ZBF_Const VTrue)
+                                      | _ => ZF_Exists v q e
+                                    end end
     end.
 
 End ThreeValuedSimp.

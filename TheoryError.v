@@ -1,6 +1,7 @@
 Require Import Omega.
 Require Import Bool.
 Require Import FunctionalExtensionality.
+Require Import Classical.
 
 (* Abstract Variable Type *)
 Module Type VARIABLE.
@@ -1150,6 +1151,13 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (L : 
 
     Eval compute in satisfied (ZF_Or (ZF_BF (ZBF_Const Top)) (ZF_BF (ZBF_Const Btm))).
 
+    Lemma three_possible: forall zf, satisfied zf \/ dissatisfied zf \/ undetermined zf.
+    Proof.
+      intros; destruct (classic (satisfied zf));
+      [left; trivial |
+       destruct (classic (dissatisfied zf)); [right; left; trivial | right; right; rewrite undetermined_unfold; intuition]].
+    Qed.
+    
   End DirectSemantics.
 
   Section ZFWellFounded.
