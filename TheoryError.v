@@ -977,6 +977,8 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (L : 
     Lemma sat_or_4: forall f1 f2, inputOrder (DisSat f2) (Sat (ZF_Or f1 f2)). smash. Defined.
     Lemma sat_imp_1: forall f1 f2, inputOrder (DisSat f1) (Sat (ZF_Imp f1 f2)). smash. Defined.
     Lemma sat_imp_2: forall f1 f2, inputOrder (Sat f2) (Sat (ZF_Imp f1 f2)). smash. Defined.
+    Lemma sat_imp_3: forall f1 f2, inputOrder (Sat f1) (Sat (ZF_Imp f1 f2)). smash. Defined.
+    Lemma sat_imp_4: forall f1 f2, inputOrder (DisSat f2) (Sat (ZF_Imp f1 f2)). smash. Defined.
     Lemma sat_not : forall f, inputOrder (DisSat f) (Sat (ZF_Not f)). smash. Defined.
     Lemma sat_forall:forall f v q(x:QT q),inputOrder(Sat (substitute (v, @conv q x) f))(Sat (ZF_Forall v q f)). smash. Defined.
     Lemma sat_exists:forall f v q(x:QT q),inputOrder(Sat (substitute (v, @conv q x) f))(Sat (ZF_Exists v q f)). smash. Defined.
@@ -1021,7 +1023,9 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (L : 
                    | ZF_Or f1 f2   => fun tpF => ((tpF (Sat f1) (sat_or_1 f1 f2)) /\ (tpF (Sat f2) (sat_or_2 f1 f2))) \/
                                                  ((tpF (DisSat f1) (sat_or_3 f1 f2)) /\ (tpF (Sat f2) (sat_or_2 f1 f2))) \/
                                                  ((tpF (Sat f1) (sat_or_1 f1 f2)) /\ (tpF (DisSat f2) (sat_or_4 f1 f2)))
-                   | ZF_Imp f1 f2  => fun tpF => (tpF (DisSat f1) (sat_imp_1 f1 f2)) \/ (tpF (Sat f2) (sat_imp_2 f1 f2))
+                   | ZF_Imp f1 f2  => fun tpF => ((tpF (Sat f1) (sat_imp_3 f1 f2)) /\ (tpF (Sat f2) (sat_imp_2 f1 f2))) \/
+                                                 ((tpF (DisSat f1) (sat_imp_1 f1 f2)) /\ (tpF (Sat f2) (sat_imp_2 f1 f2))) \/
+                                                 ((tpF (DisSat f1) (sat_imp_1 f1 f2)) /\ (tpF (DisSat f2) (sat_imp_4 f1 f2)))
                    | ZF_Not f      => fun tpF => (tpF (DisSat f) (sat_not f))
                    | ZF_Forall v q f => fun tpF => forall x: QT q, tpF (Sat (substitute (v, @conv q x) f)) (sat_forall f v q x)
                    | ZF_Exists v q f => fun tpF =>
@@ -1058,8 +1062,11 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (L : 
                                           ((tpF (DisSat f1) (sat_or_3 f1 f2)) /\ (tpF (Sat f2) (sat_or_2 f1 f2))) \/
                                           ((tpF (Sat f1) (sat_or_1 f1 f2)) /\ (tpF (DisSat f2) (sat_or_4 f1 f2))))) /\
                                       (~ ((tpF (DisSat f1) (dst_or_1 f1 f2)) /\ (tpF (DisSat f2) (dst_or_2 f1 f2))))
-                   | ZF_Imp f1 f2 => fun tpF => (~ ((tpF (DisSat f1) (sat_imp_1 f1 f2)) \/ (tpF (Sat f2) (sat_imp_2 f1 f2)))) /\
-                                                (~ ((tpF (Sat f1) (dst_imp_1 f1 f2)) /\ (tpF (DisSat f2) (dst_imp_2 f1 f2))))
+                   | ZF_Imp f1 f2 => fun tpF =>
+                                       (~ (((tpF (Sat f1) (sat_imp_3 f1 f2)) /\ (tpF (Sat f2) (sat_imp_2 f1 f2))) \/
+                                           ((tpF (DisSat f1) (sat_imp_1 f1 f2)) /\ (tpF (Sat f2) (sat_imp_2 f1 f2))) \/
+                                           ((tpF (DisSat f1) (sat_imp_1 f1 f2)) /\ (tpF (DisSat f2) (sat_imp_4 f1 f2))))) /\
+                                       (~ ((tpF (Sat f1) (dst_imp_1 f1 f2)) /\ (tpF (DisSat f2) (dst_imp_2 f1 f2))))
                    | ZF_Not f => fun tpF => (~ (tpF (DisSat f) (sat_not f))) /\ (~ (tpF (Sat f) (dst_not f)))
                    | ZF_Forall v q f =>
                      fun tpF => (~ (forall x: QT q, tpF (Sat (substitute (v, @conv q x) f)) (sat_forall f v q x))) /\
@@ -1084,7 +1091,9 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (L : 
                                   | ZF_Or f1 f2   => ((satisfied f1) /\ (satisfied f2)) \/
                                                      ((dissatisfied f1) /\ (satisfied f2)) \/
                                                      ((satisfied f1) /\ (dissatisfied f2))
-                                  | ZF_Imp f1 f2  => (dissatisfied f1) \/ (satisfied f2)
+                                  | ZF_Imp f1 f2  => ((satisfied f1) /\ (satisfied f2)) \/
+                                                     ((dissatisfied f1) /\ (satisfied f2)) \/
+                                                     ((dissatisfied f1) /\ (dissatisfied f2))
                                   | ZF_Not f      => dissatisfied f
                                   | ZF_Forall v q f => forall x : QT q, (satisfied (substitute (v , @conv q x) f))
                                   | ZF_Exists v q f => (exists x : QT q, satisfied (substitute (v , @conv q x) f)) /\
@@ -1133,7 +1142,7 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (L : 
       rewrite <- dissatisfied_unfold in H0; rewrite dissatisfied_unfold in H1.
       destruct H1; destruct H0 as [[? ?] | [[? ?] | [? ?]]]; [apply (IHn zf1) | apply (IHn zf2) | apply (IHn zf1)]; intuition.
       rewrite <- dissatisfied_unfold in H0; rewrite dissatisfied_unfold in H1.
-      destruct H1; destruct H0; [apply (IHn zf1) | apply (IHn zf2)]; intuition.
+      destruct H1; destruct H0 as [[? ?] | [[? ?] | [? ?]]]; [apply (IHn zf2) | apply (IHn zf2) | apply (IHn zf1)]; intuition.
       rewrite <- dissatisfied_unfold in H0; rewrite dissatisfied_unfold in H1; apply (IHn zf); intuition.
       destruct H1 as [[x ?] ?]; specialize (H0 x); apply (IHn (substitute (v, conv q x) zf));
       [rewrite <- substitute_length_inv|]; intuition.

@@ -368,6 +368,10 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZER
                  |[|- context[I2F.substitute (_, _) (inf_trans _)]] => rewrite subst_inf_trans_eq
                  | [H0 : IA.dissatisfied ?f1, H1 : IA.dissatisfied ?f2 |-
                     I2F.dissatisfied (inf_trans ?f1) /\ I2F.dissatisfied (inf_trans ?f2) \/ _] => left
+                 | [H0 : IA.dissatisfied ?f1, H1 : IA.dissatisfied ?f2 |-
+                    I2F.satisfied (inf_trans ?f1) /\ I2F.satisfied (inf_trans ?f2) \/ _] => right
+                 | [H0 : IA.dissatisfied ?f1, H1 : IA.dissatisfied ?f2 |-
+                    _ \/ I2F.dissatisfied (inf_trans ?f1) /\ I2F.dissatisfied (inf_trans ?f2)] => right
                  | [H0 : IA.satisfied ?f1, H1 : IA.dissatisfied ?f2 |-
                     I2F.dissatisfied (inf_trans ?f1) /\ I2F.dissatisfied (inf_trans ?f2) \/ _] => right
                  | [H0 : IA.satisfied ?f1, H1 : IA.dissatisfied ?f2 |-
@@ -378,6 +382,10 @@ Module InfSolver (sv:VARIABLE) (VAL : SEM_VAL) (S: NONE_RELATION VAL) (FZT : ZER
                     _ \/ I2F.dissatisfied (inf_trans ?f1) /\ I2F.satisfied (inf_trans ?f2)] => right
                  |[H0 : I2F.dissatisfied (inf_trans ?f1), H1 : I2F.dissatisfied (inf_trans ?f2)
                    |- IA.dissatisfied ?f1 /\ IA.dissatisfied ?f2 \/ _] => left
+                 |[H0 : I2F.dissatisfied (inf_trans ?f1), H1 : I2F.dissatisfied (inf_trans ?f2)
+                   |- IA.satisfied ?f1 /\ IA.satisfied ?f2 \/ _] => right
+                 |[H0 : I2F.dissatisfied (inf_trans ?f1), H1 : I2F.dissatisfied (inf_trans ?f2)
+                   |- _ \/ IA.dissatisfied ?f1 /\ IA.dissatisfied ?f2] => right
                  |[H0 : I2F.satisfied (inf_trans ?f1), H1 : I2F.dissatisfied (inf_trans ?f2)
                    |- IA.dissatisfied ?f1 /\ IA.dissatisfied ?f2 \/ _] => right
                  |[H0 : I2F.satisfied (inf_trans ?f1), H1 : I2F.dissatisfied (inf_trans ?f2)
