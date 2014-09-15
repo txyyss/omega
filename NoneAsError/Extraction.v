@@ -1,5 +1,5 @@
-Require Import TheoryError.
-Require Import TransformationError.
+Require Import Theory.
+Require Import Transformation.
 Require Import ZArith.
 Require Import String Ascii.
 Require Import Bool.
@@ -191,7 +191,7 @@ end.
 
 Fixpoint convert_FAZF_to_ZF_BF (bf: SIM.InfS.FA.ZBF) :ZBF sv.var :=
 match bf with
-  | SIM.InfS.FA.ZBF_Const b => match b with 
+  | SIM.InfS.FA.ZBF_Const b => match b with
                            | Three_Val.VTrue => ZBF_Const sv.var true
                            | _ => ZBF_Const sv.var false
                          end
@@ -235,15 +235,15 @@ Extract Inductive bool => bool [true false].
 Extract Inductive sumbool => bool [true false].
 Extract Inductive ascii => char
 [
-"(* If this appears, you're using Ascii internals. Please don't *) 
-(fun (b0,b1,b2,b3,b4,b5,b6,b7) -> let f b i = if b 
-                                              then 1 lsl i 
-                                              else 0 in 
+"(* If this appears, you're using Ascii internals. Please don't *)
+(fun (b0,b1,b2,b3,b4,b5,b6,b7) -> let f b i = if b
+                                              then 1 lsl i
+                                              else 0 in
                                   Char.chr (f b0 0 + f b1 1 + f b2 2 + f b3 3 + f b4 4 + f b5 5 + f b6 6 + f b7 7))"
 ]
-"(* If this appears, you're using Ascii internals. Please don't *) 
-(fun f c -> let n = Char.code c in 
-            let h i = (n land (1 lsl i)) <> 0 in 
+"(* If this appears, you're using Ascii internals. Please don't *)
+(fun f c -> let n = Char.code c in
+            let h i = (n land (1 lsl i)) <> 0 in
             f (h 0) (h 1) (h 2) (h 3) (h 4) (h 5) (h 6) (h 7))".
 Extract Constant zero => "'\000'".
 Extract Constant one => "'\001'".

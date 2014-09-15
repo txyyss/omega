@@ -1166,7 +1166,7 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (L : 
       [left; trivial |
        destruct (classic (dissatisfied zf)); [right; left; trivial | right; right; rewrite undetermined_unfold; intuition]].
     Qed.
-    
+
   End DirectSemantics.
 
   Section ZFWellFounded.

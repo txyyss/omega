@@ -1,4 +1,4 @@
-Require Import TheoryError.
+Require Import Theory.
 Require Import ZArith.
 Require Import FunctionalExtensionality.
 Require Import Omega.

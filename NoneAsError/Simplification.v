@@ -1,5 +1,5 @@
-Require Import TheoryError.
-Require Import TransformationError.
+Require Import Theory.
+Require Import Transformation.
 Require Import Bool.
 Require Import Classical.
 
