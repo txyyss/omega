@@ -1167,6 +1167,12 @@ Module ArithSemantics (I : SEMANTICS_INPUT) (V : VARIABLE) (VAL : SEM_VAL) (L : 
        destruct (classic (dissatisfied zf)); [right; left; trivial | right; right; rewrite undetermined_unfold; intuition]].
     Qed.
 
+    Lemma sat_dis_udt_eq: forall zf T, (satisfied zf <-> satisfied (T zf)) -> (dissatisfied zf <-> dissatisfied (T zf)) ->
+                                       (undetermined zf <-> undetermined (T zf)).
+    Proof.
+      intros; split; intros; rewrite undetermined_unfold in *; [rewrite H in H1; rewrite H0 in H1 | rewrite H, H0]; apply H1.
+    Qed.
+
   End DirectSemantics.
 
   Section ZFWellFounded.
